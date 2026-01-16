@@ -1,4 +1,4 @@
-# Retro Telnet Arduino Mega 2560 BBS 
+# Retro BBS hosted on an Arduino Mega 2560  
 Arduino Mega Terminal OS is a retro-inspired BBS-style terminal operating system designed to run on an Arduino Mega with an official Arduino Ethernet Shield (with SD card). Users connect over the network using Telnet, interacting through a text-based interface similar to classic bulletin board systems.
 
 It was a challenge getting this to compile for a system with only 256KB Flash, 8KB SRAM, 4KB EEPROM, and a 16MHz Processor!
