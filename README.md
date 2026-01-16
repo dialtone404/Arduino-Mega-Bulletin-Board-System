@@ -1,5 +1,8 @@
 # Retro Telnet Arduino Mega BBS 
-An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
+Arduino Mega Terminal OS is a retro-inspired BBS-style terminal operating system designed to run on an Arduino Mega with an official Arduino Ethernet Shield (with SD card). Users connect over the network using Telnet, interacting through a text-based interface similar to classic bulletin board systems.
+
+    ⚠️ This project is experimental and a work in progress. Some features may be incomplete or buggy.
+
 
 ---
 
@@ -33,11 +36,6 @@ An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
 # Arduino Mega  OS
 
 **Enhanced BBS-Style System v3.0**
-
-Arduino Mega Terminal OS is a retro-inspired **BBS-style terminal operating system** designed to run on an **Arduino Mega** with an **official Arduino Ethernet Shield (with SD card)**.
-Users connect over the network using **Telnet**, interacting through a text-based interface similar to classic bulletin board systems.
-
-> ⚠️ This project is experimental and a work in progress. Some features may be incomplete or buggy.
 
 ---
 
