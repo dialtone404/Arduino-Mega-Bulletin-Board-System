@@ -35,7 +35,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 ![Message Viewer](arduino_bbs6.PNG)
 
 
-# Arduino Mega  OS
+# Arduino Mega 2560 OS
 
 **Enhanced BBS-Style System v3.0**
 
