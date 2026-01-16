@@ -6,22 +6,22 @@ An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
 ## 📸 Screenshots
 
 **Login Screen**
-![Login Screen](arduino_bbs1.png)
+![Login Screen](arduino_bbs1.PNG)
 
 **Main Menu**
-![Main Menu](arduino_bbs2.png)
+![Main Menu](arduino_bbs2.PNG)
 
 **Weather Conditionsr**
-![Weather Conditions](arduino_bbs3.png)
+![Weather Conditions](arduino_bbs3.PNG)
 
 **Games**
-![Games](arduino_bbs4.png)
+![Games](arduino_bbs4.PNG)
 
 **Message Board**
-![Message Board](arduino_bbs5.png)
+![Message Board](arduino_bbs5.PNG)
 
 **Message Viewer**
-![Message Viewer](arduino_bbs6.png)
+![Message Viewer](arduino_bbs6.PNG)
 
 
 # Arduino Mega Terminal OS
