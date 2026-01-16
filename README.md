@@ -1,6 +1,5 @@
 # Arduino-Mega-Bulletin-Board-System
 An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
-Below is a clean, GitHub-ready **README.md** you can copy-paste. It’s honest about limitations, clearly documents setup, and sets expectations while still making the project look solid and interesting.
 
 ---
 
