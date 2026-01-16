@@ -13,6 +13,7 @@
  * - Games: Number Guessing, Trivia
  * - User notes system
  * - System logs
+ * - Home Assistant Support
  * - Improved SD card file structure
  * - Created By: https://github.com/dialtone404/
  */
@@ -54,7 +55,10 @@ enum MenuState {
   MENU_STOCKS,
   MENU_GAMES,
   MENU_GAME_GUESS,
-  MENU_UTILITIES
+  MENU_UTILITIES,
+  MENU_HOME_ASSISTANT,
+  MENU_HA_SETUP,
+  MENU_HA_MANAGE_LIGHTS
 };
 
 // STEP 1: Update the Session struct (add new variable)
@@ -74,6 +78,19 @@ struct Session {
   bool waitingForContinue;  // ADD THIS
   MenuState returnToMenu;   // ADD THIS - stores which menu to return to
 } session;
+
+// Home Assistant Configuration
+struct HAConfig {
+  char server[40];
+  int port;
+  char token[256];
+  bool configured;
+} haConfig;
+
+struct HALight {
+  char entityId[50];
+  char displayName[30];
+};
 
 // Command buffer
 char cmdBuffer[MAX_CMD_LENGTH];
@@ -156,6 +173,11 @@ void setup() {
       Serial.println(F("Created default admin user"));
     }
   }
+  // Create HA directory
+  SD.mkdir("ha");
+  
+  // Load HA configuration
+  loadHAConfig();
   
   // Create default news
   if (!SD.exists("news/news.txt")) {
@@ -514,7 +536,7 @@ void showMainMenu() {
   client.print(CLR_RESET);
   client.println();
   
-    client.print(CLR_BRIGHT_GREEN);
+  client.print(CLR_BRIGHT_GREEN);
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Message Board    - Post and read messages          │"));
@@ -526,6 +548,18 @@ void showMainMenu() {
   client.println(F("  │  [7] Games            - Play interactive games          │"));
   client.println(F("  │  [8] Utilities        - Tools and system info           │"));
   client.println(F("  │  [9] News Reader      - Read latest updates             │"));
+  client.println(F("  │                                                         │"));
+  
+  if (haConfig.configured) {
+    client.print(CLR_BRIGHT_CYAN);
+    client.println(F("  │  [H] Home Control     - Control Home Assistant          │"));
+    client.print(CLR_BRIGHT_GREEN);
+  } else {
+    client.print(CLR_YELLOW);
+    client.println(F("  │  [H] Home Control     - Setup required                  │"));
+    client.print(CLR_BRIGHT_GREEN);
+  }
+  
   client.println(F("  │                                                         │"));
   client.println(F("  │  [0] Logout           - Exit the system                 │"));
   client.println(F("  │                                                         │"));
@@ -567,50 +601,17 @@ void showCurrentMenu() {
   }
 }
 
-void handleMenuInput() {
-  int choice = atoi(cmdBuffer);
-  
-  switch (session.currentMenu) {
-    case MENU_MAIN:
-      handleMainMenuChoice(choice);
-      break;
-    case MENU_MESSAGES:
-      handleMessageMenuChoice(choice);
-      break;
-    case MENU_FILES:
-      handleFileMenuChoice(choice);
-      break;
-    case MENU_STATS:
-      if (choice == 0) showMainMenu();
-      else showPrompt();
-      break;
-    case MENU_SETTINGS:
-      handleSettingsChoice(choice);
-      break;
-    case MENU_NEWS:
-      if (choice == 0) showMainMenu();
-      else showPrompt();
-      break;
-    case MENU_WEATHER:
-      if (choice == 0) showMainMenu();
-      else showPrompt();
-      break;
-    case MENU_STOCKS:
-      if (choice == 0) showMainMenu();
-      else showPrompt();
-      break;
-    case MENU_UTILITIES:
-      handleUtilitiesChoice(choice);
-      break;
-    case MENU_GAMES:
-      handleGamesChoice(choice);
-      break;
-    default:
-      showMainMenu();
-  }
-}
-
 void handleMainMenuChoice(int choice) {
+  // Check for 'H' or 'h' command first
+  if (cmdBuffer[0] == 'h' || cmdBuffer[0] == 'H') {
+    if (haConfig.configured) {
+      showHomeAssistantMenu();
+    } else {
+      showHASetupMenu();
+    }
+    return;
+  }
+  
   switch (choice) {
     case 1:
       showMessageMenu();
@@ -693,6 +694,837 @@ void handleEditorMenuChoice(int choice) {
   }
 }
 
+void loadHAConfig() {
+  haConfig.configured = false;
+  
+  File f = SD.open("ha/config.txt", FILE_READ);
+  if (!f) {
+    Serial.println(F("No HA config found"));
+    return;
+  }
+  
+  char line[300];
+  int idx = 0;
+  
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        line[idx] = '\0';
+        
+        // Parse line: key=value
+        char* key = strtok(line, "=");
+        char* value = strtok(NULL, "=");
+        
+        if (key && value) {
+          if (strcmp(key, "server") == 0) {
+            strncpy(haConfig.server, value, 39);
+            haConfig.server[39] = '\0';
+          } else if (strcmp(key, "port") == 0) {
+            haConfig.port = atoi(value);
+          } else if (strcmp(key, "token") == 0) {
+            strncpy(haConfig.token, value, 255);
+            haConfig.token[255] = '\0';
+          }
+        }
+        idx = 0;
+      }
+    } else if (idx < 299) {
+      line[idx++] = c;
+    }
+  }
+  
+  f.close();
+  
+  // Check if we have all required fields
+  if (strlen(haConfig.server) > 0 && haConfig.port > 0 && strlen(haConfig.token) > 0) {
+    haConfig.configured = true;
+    Serial.println(F("HA config loaded"));
+  }
+}
+
+void saveHAConfig() {
+  if (SD.exists("ha/config.txt")) {
+    SD.remove("ha/config.txt");
+  }
+  
+  File f = SD.open("ha/config.txt", FILE_WRITE);
+  if (f) {
+    f.print("server=");
+    f.println(haConfig.server);
+    f.print("port=");
+    f.println(haConfig.port);
+    f.print("token=");
+    f.println(haConfig.token);
+    f.close();
+    
+    client.print(CLR_BRIGHT_GREEN);
+    client.println(F("✓ Configuration saved!"));
+    client.print(CLR_RESET);
+  } else {
+    client.print(CLR_RED);
+    client.println(F("✗ Error saving configuration!"));
+    client.print(CLR_RESET);
+  }
+}
+
+void addLight(const char* entityId, const char* displayName) {
+  File f = SD.open("ha/lights.txt", FILE_WRITE);
+  if (f) {
+    f.print(entityId);
+    f.print(":");
+    f.println(displayName);
+    f.close();
+    return;
+  }
+}
+
+int countLights() {
+  File f = SD.open("ha/lights.txt", FILE_READ);
+  if (!f) return 0;
+  
+  int count = 0;
+  char line[100];
+  int idx = 0;
+  
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        count++;
+        idx = 0;
+      }
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+  
+  f.close();
+  return count;
+}
+
+bool getLight(int index, HALight& light) {
+  File f = SD.open("ha/lights.txt", FILE_READ);
+  if (!f) return false;
+  
+  int currentIndex = 0;
+  char line[100];
+  int idx = 0;
+  bool found = false;
+  
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        if (currentIndex == index) {
+          line[idx] = '\0';
+          char* entity = strtok(line, ":");
+          char* name = strtok(NULL, ":");
+          
+          if (entity && name) {
+            strncpy(light.entityId, entity, 49);
+            light.entityId[49] = '\0';
+            strncpy(light.displayName, name, 29);
+            light.displayName[29] = '\0';
+            found = true;
+          }
+          break;
+        }
+        currentIndex++;
+        idx = 0;
+      }
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+  
+  f.close();
+  return found;
+}
+
+void deleteLight(int index) {
+  // Read all lights except the one to delete
+  File fRead = SD.open("ha/lights.txt", FILE_READ);
+  if (!fRead) return;
+  
+  File fTemp = SD.open("ha/temp.txt", FILE_WRITE);
+  if (!fTemp) {
+    fRead.close();
+    return;
+  }
+  
+  int currentIndex = 0;
+  char line[100];
+  int idx = 0;
+  
+  while (fRead.available()) {
+    char c = fRead.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        if (currentIndex != index) {
+          line[idx] = '\0';
+          fTemp.println(line);
+        }
+        currentIndex++;
+        idx = 0;
+      }
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+  
+  fRead.close();
+  fTemp.close();
+  
+  SD.remove("ha/lights.txt");
+  // Note: SD library doesn't have rename, so we need to copy
+  File fTempRead = SD.open("ha/temp.txt", FILE_READ);
+  File fNew = SD.open("ha/lights.txt", FILE_WRITE);
+  
+  if (fTempRead && fNew) {
+    while (fTempRead.available()) {
+      fNew.write(fTempRead.read());
+    }
+    fTempRead.close();
+    fNew.close();
+  }
+  
+  SD.remove("ha/temp.txt");
+}
+
+void showHASetupMenu() {
+  client.print(F("\033[2J\033[H"));
+  session.currentMenu = MENU_HA_SETUP;
+  
+  drawBox(CLR_MAGENTA, "HOME ASSISTANT SETUP");
+  
+  client.println();
+  
+  if (haConfig.configured) {
+    client.print(CLR_BRIGHT_GREEN);
+    client.println(F("  ✓ Home Assistant is configured"));
+    client.print(CLR_RESET);
+    client.println();
+    client.print(F("  Server: "));
+    client.println(haConfig.server);
+    client.print(F("  Port: "));
+    client.println(haConfig.port);
+    client.print(F("  Token: "));
+    // Show only first and last 4 characters of token
+    if (strlen(haConfig.token) > 8) {
+      for (int i = 0; i < 4; i++) client.print(haConfig.token[i]);
+      client.print(F("..."));
+      int len = strlen(haConfig.token);
+      for (int i = len - 4; i < len; i++) client.print(haConfig.token[i]);
+    } else {
+      client.print(F("****"));
+    }
+    client.println();
+  } else {
+    client.print(CLR_YELLOW);
+    client.println(F("  ⚠ Home Assistant not configured"));
+    client.print(CLR_RESET);
+  }
+  
+  client.println();
+  client.print(CLR_BRIGHT_CYAN);
+  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [1] Configure Server - Set HA IP and port             │"));
+  client.println(F("  │  [2] Set API Token    - Enter long-lived token         │"));
+  client.println(F("  │  [3] Test Connection  - Verify settings work           │"));
+  client.println(F("  │  [4] Manage Lights    - Add/remove/list lights         │"));
+  client.println(F("  │  [5] Reset Config     - Clear all settings             │"));
+  client.println(F("  │                                                         │"));
+  if (haConfig.configured) {
+    client.println(F("  │  [C] Control Lights   - Go to control menu             │"));
+    client.println(F("  │                                                         │"));
+  }
+  client.println(F("  │  [0] Back to Main Menu                                  │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  └─────────────────────────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  showPrompt();
+}
+
+void handleHASetupChoice(int choice) {
+  // Check for 'C' command
+  if (cmdBuffer[0] == 'c' || cmdBuffer[0] == 'C') {
+    if (haConfig.configured) {
+      showHomeAssistantMenu();
+    } else {
+      client.println(F("Please configure Home Assistant first."));
+      delay(2000);
+      showHASetupMenu();
+    }
+    return;
+  }
+  
+  switch (choice) {
+    case 1:
+      configureHAServer();
+      break;
+    case 2:
+      configureHAToken();
+      break;
+    case 3:
+      testHAConnection();
+      break;
+    case 4:
+      showManageLightsMenu();
+      break;
+    case 5:
+      resetHAConfig();
+      break;
+    case 0:
+      showMainMenu();
+      break;
+    default:
+      client.println(F("Invalid choice."));
+      showPrompt();
+  }
+}
+
+void configureHAServer() {
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("Enter Home Assistant IP (e.g., 192.168.1.100): "));
+  client.print(CLR_RESET);
+  
+  char server[40];
+  int idx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        server[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 39 && c >= 32) {
+        server[idx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (idx == 0) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showHASetupMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("Enter port (default 8123): "));
+  
+  char portStr[10];
+  idx = 0;
+  startTime = millis();
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        portStr[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 9 && c >= '0' && c <= '9') {
+        portStr[idx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  int port = (idx > 0) ? atoi(portStr) : 8123;
+  
+  // Save configuration
+  strncpy(haConfig.server, server, 39);
+  haConfig.server[39] = '\0';
+  haConfig.port = port;
+  
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("✓ Server set to: "));
+  client.print(haConfig.server);
+  client.print(F(":"));
+  client.println(haConfig.port);
+  client.print(CLR_RESET);
+  
+  // Check if we're fully configured now
+  if (strlen(haConfig.token) > 0) {
+    haConfig.configured = true;
+    saveHAConfig();
+  }
+  
+  delay(2000);
+  showHASetupMenu();
+}
+
+void configureHAToken() {
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.println(F("Enter your Home Assistant Long-Lived Access Token:"));
+  client.println(F("(Go to Profile > Security > Long-Lived Access Tokens)"));
+  client.print(CLR_RESET);
+  client.print(F("> "));
+  
+  char token[256];
+  int idx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 120000) {  // 2 minute timeout for token entry
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        token[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 255 && c >= 32) {
+        token[idx++] = c;
+        client.write('*');  // Show asterisks for security
+      }
+    }
+  }
+  
+  if (idx == 0) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showHASetupMenu();
+    return;
+  }
+  
+  // Save token
+  strncpy(haConfig.token, token, 255);
+  haConfig.token[255] = '\0';
+  
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.println(F("✓ Token saved!"));
+  client.print(CLR_RESET);
+  
+  // Check if we're fully configured now
+  if (strlen(haConfig.server) > 0 && haConfig.port > 0) {
+    haConfig.configured = true;
+    saveHAConfig();
+  }
+  
+  delay(2000);
+  showHASetupMenu();
+}
+
+void testHAConnection() {
+  client.println();
+  client.println(F("Testing connection to Home Assistant..."));
+  client.println();
+  
+  if (!haConfig.configured) {
+    client.print(CLR_RED);
+    client.println(F("✗ Configuration incomplete!"));
+    client.print(CLR_RESET);
+    delay(2000);
+    showHASetupMenu();
+    return;
+  }
+  
+  EthernetClient haClient;
+  
+  client.print(F("Connecting to "));
+  client.print(haConfig.server);
+  client.print(F(":"));
+  client.print(haConfig.port);
+  client.println(F("..."));
+  
+  if (haClient.connect(haConfig.server, haConfig.port)) {
+    client.print(CLR_BRIGHT_GREEN);
+    client.println(F("✓ Connected!"));
+    client.print(CLR_RESET);
+    
+    // Try to get API status
+    haClient.println(F("GET /api/ HTTP/1.1"));
+    haClient.print(F("Host: "));
+    haClient.print(haConfig.server);
+    haClient.print(F(":"));
+    haClient.println(haConfig.port);
+    haClient.print(F("Authorization: Bearer "));
+    haClient.println(haConfig.token);
+    haClient.println(F("Connection: close"));
+    haClient.println();
+    
+    // Wait for response
+    unsigned long timeout = millis();
+    while (haClient.connected() && millis() - timeout < 5000) {
+      if (haClient.available()) break;
+      delay(10);
+    }
+    
+    bool success = false;
+    while (haClient.available()) {
+      String line = haClient.readStringUntil('\n');
+      if (line.indexOf("200 OK") >= 0) {
+        success = true;
+      }
+      if (line.indexOf("message") >= 0 && line.indexOf("API running") >= 0) {
+        success = true;
+      }
+    }
+    
+    haClient.stop();
+    
+    if (success) {
+      client.print(CLR_BRIGHT_GREEN);
+      client.println(F("✓ Home Assistant API responding correctly!"));
+      client.print(CLR_RESET);
+    } else {
+      client.print(CLR_YELLOW);
+      client.println(F("⚠ Connected but API response unclear."));
+      client.println(F("  Check your token permissions."));
+      client.print(CLR_RESET);
+    }
+  } else {
+    client.print(CLR_RED);
+    client.println(F("✗ Connection failed!"));
+    client.println(F("  Check IP address and port."));
+    client.print(CLR_RESET);
+  }
+  
+  client.println();
+  client.println(F("Press Enter to continue..."));
+  session.waitingForContinue = true;
+  session.returnToMenu = MENU_HA_SETUP;
+}
+
+void resetHAConfig() {
+  client.println();
+  client.print(CLR_RED);
+  client.print(F("Reset all Home Assistant configuration? (y/n): "));
+  client.print(CLR_RESET);
+  
+  char response[10];
+  int idx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 10000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        response[idx] = '\0';
+        break;
+      } else if (idx < 9) {
+        response[idx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  client.println();
+  
+  if (idx > 0 && (response[0] == 'y' || response[0] == 'Y')) {
+    SD.remove("ha/config.txt");
+    SD.remove("ha/lights.txt");
+    
+    haConfig.server[0] = '\0';
+    haConfig.port = 0;
+    haConfig.token[0] = '\0';
+    haConfig.configured = false;
+    
+    client.print(CLR_BRIGHT_GREEN);
+    client.println(F("✓ Configuration reset!"));
+    client.print(CLR_RESET);
+  } else {
+    client.println(F("Cancelled."));
+  }
+  
+  delay(2000);
+  showHASetupMenu();
+}
+
+void showManageLightsMenu() {
+  client.print(F("\033[2J\033[H"));
+  session.currentMenu = MENU_HA_MANAGE_LIGHTS;
+  
+  drawBox(CLR_CYAN, "MANAGE LIGHTS");
+  
+  client.println();
+  
+  int lightCount = countLights();
+  
+  if (lightCount > 0) {
+    client.print(CLR_BRIGHT_YELLOW);
+    client.println(F("  Configured Lights:"));
+    client.print(CLR_RESET);
+    client.println(F("  ───────────────────────────────────────────────────────────"));
+    
+    for (int i = 0; i < lightCount; i++) {
+      HALight light;
+      if (getLight(i, light)) {
+        client.print(F("  ["));
+        client.print(i + 1);
+        client.print(F("] "));
+        client.print(light.displayName);
+        client.print(F(" ("));
+        client.print(light.entityId);
+        client.println(F(")"));
+      }
+    }
+    client.println();
+  } else {
+    client.print(CLR_YELLOW);
+    client.println(F("  No lights configured yet."));
+    client.print(CLR_RESET);
+    client.println();
+  }
+  
+  client.print(CLR_BRIGHT_CYAN);
+  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [1] Add Light        - Add a new light entity          │"));
+  client.println(F("  │  [2] Remove Light     - Delete a light from list        │"));
+  client.println(F("  │  [3] List All Lights  - Show all configured lights      │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [0] Back             - Return to setup menu            │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  └─────────────────────────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  showPrompt();
+}
+
+void handleManageLightsChoice(int choice) {
+  switch (choice) {
+    case 1:
+      addLightInteractive();
+      break;
+    case 2:
+      removeLightInteractive();
+      break;
+    case 3:
+      listAllLights();
+      break;
+    case 0:
+      showHASetupMenu();
+      break;
+    default:
+      client.println(F("Invalid choice."));
+      showPrompt();
+  }
+}
+
+void addLightInteractive() {
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("Enter entity ID (e.g., light.living_room): "));
+  client.print(CLR_RESET);
+  
+  char entityId[50];
+  int idx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        entityId[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 49 && c >= 32) {
+        entityId[idx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (idx == 0) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showManageLightsMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("Enter display name (e.g., Living Room): "));
+  
+  char displayName[30];
+  idx = 0;
+  startTime = millis();
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        displayName[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 29 && c >= 32) {
+        displayName[idx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (idx == 0) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showManageLightsMenu();
+    return;
+  }
+  
+  addLight(entityId, displayName);
+  
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("✓ Light added: "));
+  client.print(displayName);
+  client.print(F(" ("));
+  client.print(entityId);
+  client.println(F(")"));
+  client.print(CLR_RESET);
+  
+  delay(2000);
+  showManageLightsMenu();
+}
+
+void removeLightInteractive() {
+  int lightCount = countLights();
+  
+  if (lightCount == 0) {
+    client.println();
+    client.println(F("No lights to remove."));
+    delay(2000);
+    showManageLightsMenu();
+    return;
+  }
+  
+  client.println();
+  client.println(F("Which light to remove?"));
+  
+  for (int i = 0; i < lightCount; i++) {
+    HALight light;
+    if (getLight(i, light)) {
+      client.print(F("  ["));
+      client.print(i + 1);
+      client.print(F("] "));
+      client.println(light.displayName);
+    }
+  }
+  
+  client.println();
+  client.print(F("Enter number (1-"));
+  client.print(lightCount);
+  client.print(F("): "));
+  char numStr[5];
+int idx = 0;
+unsigned long startTime = millis();
+while (millis() - startTime < 30000) {
+if (client.available()) {
+char c = client.read();
+if (c == '\n' || c == '\r') {
+numStr[idx] = '\0';
+break;
+} else if (c == 8 || c == 127) {
+if (idx > 0) {
+idx--;
+client.write(8);
+client.write(' ');
+client.write(8);
+}
+} else if (idx < 4 && c >= '0' && c <= '9') {
+numStr[idx++] = c;
+client.write(c);
+}
+}
+}
+if (idx == 0) {
+client.println();
+showManageLightsMenu();
+return;
+}
+int num = atoi(numStr);
+if (num >= 1 && num <= lightCount) {
+HALight light;
+if (getLight(num - 1, light)) {
+deleteLight(num - 1);
+client.println();
+client.print(CLR_BRIGHT_GREEN);
+client.print(F("✓ Removed: "));
+client.println(light.displayName);
+client.print(CLR_RESET);
+}
+} else {
+client.println();
+client.println(F("Invalid number."));
+}
+delay(2000);
+showManageLightsMenu();
+}
+void listAllLights() {
+client.print(F("\033[2J\033[H"));
+drawBox(CLR_CYAN, "ALL CONFIGURED LIGHTS");
+client.println();
+int lightCount = countLights();
+if (lightCount == 0) {
+client.println(F("  No lights configured."));
+} else {
+for (int i = 0; i < lightCount; i++) {
+HALight light;
+if (getLight(i, light)) {
+client.print(CLR_BRIGHT_YELLOW);
+client.print(F("  ┌─[ "));
+client.print(light.displayName);
+client.println(F(" ]"));
+client.print(CLR_RESET);
+client.print(F("  │ Entity ID: "));
+client.println(light.entityId);
+client.print(CLR_BRIGHT_YELLOW);
+client.println(F("  └────────────────────────────────────────────"));
+client.print(CLR_RESET);
+client.println();
+}
+}
+}
+client.println(F("Press Enter to continue..."));
+session.waitingForContinue = true;
+session.returnToMenu = MENU_HA_MANAGE_LIGHTS;
+}
+
 void createNewNote() {
   client.println();
   client.print(CLR_BRIGHT_GREEN);
@@ -734,6 +1566,399 @@ void createNewNote() {
   strcpy(session.editorFilename, filename);
   session.editorLines = 0;
   startTextEditor();
+}
+
+void showHomeAssistantMenu() {
+  client.print(F("\033[2J\033[H"));
+  session.currentMenu = MENU_HOME_ASSISTANT;
+  
+  drawBox(CLR_MAGENTA, "HOME ASSISTANT CONTROL");
+  
+  client.println();
+  
+  int lightCount = countLights();
+  
+  if (lightCount == 0) {
+    client.print(CLR_YELLOW);
+    client.println(F("  No lights configured!"));
+    client.println(F("  Go to Setup > Manage Lights to add lights."));
+    client.print(CLR_RESET);
+    client.println();
+    client.println(F("  [S] Setup Menu"));
+    client.println(F("  [0] Back to Main Menu"));
+    client.println();
+    showPrompt();
+    return;
+  }
+  
+  client.print(CLR_BRIGHT_CYAN);
+  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.println(F("  │                                                         │"));
+  
+  // Show each configured light
+  for (int i = 0; i < lightCount && i < 8; i++) {  // Max 8 lights for display
+    HALight light;
+    if (getLight(i, light)) {
+      client.print(F("  │  ["));
+      client.print(i + 1);
+      client.print(F("] "));
+      client.print(light.displayName);
+      
+      // Pad with spaces
+      int padding = 48 - strlen(light.displayName);
+      for (int p = 0; p < padding; p++) client.print(F(" "));
+      
+      client.println(F("│"));
+    }
+  }
+  
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [A] Toggle All       - Turn all lights on/off         │"));
+  client.println(F("  │  [C] Check Status     - View current light states      │"));
+  client.println(F("  │  [S] Setup            - Manage configuration           │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [0] Back to Main Menu                                  │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  └─────────────────────────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  showPrompt();
+}
+
+void handleHomeAssistantChoice(int choice) {
+  // Check for letter commands
+  if (cmdBuffer[0] == 'a' || cmdBuffer[0] == 'A') {
+    toggleAllLights();
+    return;
+  }
+  if (cmdBuffer[0] == 'c' || cmdBuffer[0] == 'C') {
+    checkAllLightsStatus();
+    return;
+  }
+  if (cmdBuffer[0] == 's' || cmdBuffer[0] == 'S') {
+    showHASetupMenu();
+    return;
+  }
+  
+  // Number choices for individual lights
+  if (choice >= 1 && choice <= countLights()) {
+    HALight light;
+    if (getLight(choice - 1, light)) {
+      toggleLight(light.entityId, light.displayName);
+    }
+  } else if (choice == 0) {
+    showMainMenu();
+  } else {
+    client.println(F("Invalid choice."));
+    showPrompt();
+  }
+}
+
+void toggleLight(const char* entityId, const char* displayName) {
+  client.println();
+  client.print(F("Toggling "));
+  client.print(displayName);
+  client.println(F("..."));
+  
+  EthernetClient haClient;
+  
+  if (haClient.connect(haConfig.server, haConfig.port)) {
+    // Build the HTTP POST request
+    String postData = String("{\"entity_id\":\"") + entityId + "\"}";
+    
+    haClient.println(F("POST /api/services/light/toggle HTTP/1.1"));
+    haClient.print(F("Host: "));
+    haClient.print(haConfig.server);
+    haClient.print(F(":"));
+    haClient.println(haConfig.port);
+    haClient.print(F("Authorization: Bearer "));
+    haClient.println(haConfig.token);
+    haClient.println(F("Content-Type: application/json"));
+    haClient.print(F("Content-Length: "));
+    haClient.println(postData.length());
+    haClient.println(F("Connection: close"));
+    haClient.println();
+    haClient.println(postData);
+    
+    // Wait for response
+    unsigned long timeout = millis();
+    while (haClient.connected() && millis() - timeout < 5000) {
+      if (haClient.available()) break;
+      delay(10);
+    }
+    
+    bool success = false;
+    while (haClient.available()) {
+      String line = haClient.readStringUntil('\n');
+      if (line.indexOf("200 OK") >= 0) {
+        success = true;
+      }
+    }
+    
+    haClient.stop();
+    
+    if (success) {
+      client.print(CLR_BRIGHT_GREEN);
+      client.print(F("✓ "));
+      client.print(displayName);
+      client.println(F(" toggled successfully!"));
+      client.print(CLR_RESET);
+    } else {
+      client.print(CLR_RED);
+      client.println(F("✗ Failed to toggle light"));
+      client.print(CLR_RESET);
+    }
+  } else {
+    client.print(CLR_RED);
+    client.println(F("✗ Cannot connect to Home Assistant"));
+    client.print(CLR_RESET);
+  }
+  
+  delay(2000);
+  showHomeAssistantMenu();
+}
+
+void toggleAllLights() {
+  client.println();
+  client.println(F("Toggling all lights..."));
+  client.println();
+  
+  int lightCount = countLights();
+  int successCount = 0;
+  
+  for (int i = 0; i < lightCount; i++) {
+    HALight light;
+    if (getLight(i, light)) {
+      client.print(F("  "));
+      client.print(light.displayName);
+      client.print(F("... "));
+      
+      EthernetClient haClient;
+      if (haClient.connect(haConfig.server, haConfig.port)) {
+        String postData = String("{\"entity_id\":\"") + light.entityId + "\"}";
+        
+        haClient.println(F("POST /api/services/light/toggle HTTP/1.1"));
+        haClient.print(F("Host: "));
+        haClient.print(haConfig.server);
+        haClient.print(F(":"));
+        haClient.println(haConfig.port);
+        haClient.print(F("Authorization: Bearer "));
+        haClient.println(haConfig.token);
+        haClient.println(F("Content-Type: application/json"));
+        haClient.print(F("Content-Length: "));
+        haClient.println(postData.length());
+        haClient.println(F("Connection: close"));
+        haClient.println();
+        haClient.println(postData);
+        
+        delay(300);
+        
+        bool success = false;
+        while (haClient.available()) {
+          String line = haClient.readStringUntil('\n');
+          if (line.indexOf("200 OK") >= 0) {
+            success = true;
+          }
+        }
+        
+        haClient.stop();
+        
+        if (success) {
+          client.print(CLR_BRIGHT_GREEN);
+          client.println(F("✓"));
+          client.print(CLR_RESET);
+          successCount++;
+        } else {
+          client.print(CLR_RED);
+          client.println(F("✗"));
+          client.print(CLR_RESET);
+        }
+      } else {
+        client.print(CLR_RED);
+        client.println(F("✗"));
+        client.print(CLR_RESET);
+      }
+      
+      delay(200);
+    }
+  }
+  
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("✓ Toggled "));
+  client.print(successCount);
+  client.print(F(" of "));
+  client.print(lightCount);
+  client.println(F(" lights"));
+  client.print(CLR_RESET);
+  
+  delay(3000);
+  showHomeAssistantMenu();
+}
+
+void checkAllLightsStatus() {
+  client.print(F("\033[2J\033[H"));
+  drawBox(CLR_CYAN, "LIGHT STATUS");
+  client.println();
+  
+  client.print(CLR_BRIGHT_YELLOW);
+  client.println(F("  Fetching status from Home Assistant..."));
+  client.print(CLR_RESET);
+  client.println();
+  
+  int lightCount = countLights();
+  
+  for (int i = 0; i < lightCount; i++) {
+    HALight light;
+    if (getLight(i, light)) {
+      getLightStatus(light.entityId, light.displayName);
+      delay(300);
+    }
+  }
+  
+  client.println();
+  client.println(F("Press Enter to continue..."));
+  session.waitingForContinue = true;
+  session.returnToMenu = MENU_HOME_ASSISTANT;
+}
+
+void getLightStatus(const char* entityId, const char* displayName) {
+  EthernetClient haClient;
+  
+  client.print(F("  "));
+  client.print(displayName);
+  client.print(F(": "));
+  
+  if (haClient.connect(haConfig.server, haConfig.port)) {
+    // Build the HTTP GET request for entity state
+    haClient.print(F("GET /api/states/"));
+    haClient.print(entityId);
+    haClient.println(F(" HTTP/1.1"));
+    haClient.print(F("Host: "));
+    haClient.print(haConfig.server);
+    haClient.print(F(":"));
+    haClient.println(haConfig.port);
+    haClient.print(F("Authorization: Bearer "));
+    haClient.println(haConfig.token);
+    haClient.println(F("Connection: close"));
+    haClient.println();
+    
+    // Wait for response
+    unsigned long timeout = millis();
+    while (haClient.connected() && millis() - timeout < 5000) {
+      if (haClient.available()) break;
+      delay(10);
+    }
+    
+    // Read response - look for the state
+    String response = "";
+    bool inBody = false;
+    
+    while (haClient.available()) {
+      String line = haClient.readStringUntil('\n');
+      
+      // Check if we've reached the body (empty line after headers)
+      if (line == "\r" || line.length() == 0) {
+        inBody = true;
+        continue;
+      }
+      
+      if (inBody) {
+        response += line;
+      }
+    }
+    
+    haClient.stop();
+    
+    // Parse the JSON response for state
+    if (response.length() > 0) {
+      int statePos = response.indexOf("\"state\":");
+      if (statePos >= 0) {
+        int quoteStart = response.indexOf("\"", statePos + 8);
+        int quoteEnd = response.indexOf("\"", quoteStart + 1);
+        
+        if (quoteStart >= 0 && quoteEnd >= 0) {
+          String state = response.substring(quoteStart + 1, quoteEnd);
+          
+          if (state == "on") {
+            client.print(CLR_BRIGHT_GREEN);
+            client.println(F("ON"));
+            client.print(CLR_RESET);
+          } else if (state == "off") {
+            client.print(CLR_YELLOW);
+            client.println(F("OFF"));
+            client.print(CLR_RESET);
+          } else {
+            client.println(state);
+          }
+          
+          return;
+        }
+      }
+    }
+    
+    client.print(CLR_YELLOW);
+    client.println(F("Unknown"));
+    client.print(CLR_RESET);
+    
+  } else {
+    client.print(CLR_RED);
+    client.println(F("Connection failed"));
+    client.print(CLR_RESET);
+  }
+}
+
+void handleMenuInput() {
+  int choice = atoi(cmdBuffer);
+  
+  switch (session.currentMenu) {
+    case MENU_MAIN:
+      handleMainMenuChoice(choice);
+      break;
+    case MENU_MESSAGES:
+      handleMessageMenuChoice(choice);
+      break;
+    case MENU_FILES:
+      handleFileMenuChoice(choice);
+      break;
+    case MENU_STATS:
+      if (choice == 0) showMainMenu();
+      else showPrompt();
+      break;
+    case MENU_SETTINGS:
+      handleSettingsChoice(choice);
+      break;
+    case MENU_NEWS:
+      if (choice == 0) showMainMenu();
+      else showPrompt();
+      break;
+    case MENU_WEATHER:
+      if (choice == 0) showMainMenu();
+      else showPrompt();
+      break;
+    case MENU_STOCKS:
+      if (choice == 0) showMainMenu();
+      else showPrompt();
+      break;
+    case MENU_UTILITIES:
+      handleUtilitiesChoice(choice);
+      break;
+    case MENU_GAMES:
+      handleGamesChoice(choice);
+      break;
+    case MENU_HOME_ASSISTANT:
+      handleHomeAssistantChoice(choice);
+      break;
+    case MENU_HA_SETUP:
+      handleHASetupChoice(choice);
+      break;
+    case MENU_HA_MANAGE_LIGHTS:
+      handleManageLightsChoice(choice);
+      break;
+    default:
+      showMainMenu();
+  }
 }
 
 void editExistingNote() {
@@ -1373,7 +2598,7 @@ void handleUtilitiesChoice(int choice) {
   }
 }
 
-// STEP 6: Update showSystemLog() function  -  github.com/dialtone404
+// STEP 6: Update showSystemLog() function
 void showSystemLog() {
   client.print(F("\033[2J\033[H"));
   drawBox(CLR_BLUE, "SYSTEM LOG");
