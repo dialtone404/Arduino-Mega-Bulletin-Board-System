@@ -13,7 +13,7 @@ An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
 
 ![Main Menu](arduino_bbs2.PNG)
 
-**Weather Conditionsr**
+**Weather Conditions**
 
 ![Weather Conditions](arduino_bbs3.PNG)
 
