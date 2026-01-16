@@ -1,4 +1,4 @@
-# Arduino-Mega-Bulletin-Board-System
+# Retro Arduino Mega Bulletin Board System (BBS)
 An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
 
 ---
