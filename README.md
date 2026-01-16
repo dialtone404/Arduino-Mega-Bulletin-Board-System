@@ -67,6 +67,8 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 * **System Logs**
 * **Structured SD Card File System**
 
+* Home Assistant Controller Functionality 
+
 ---
 
 ## 🧰 Hardware Requirements
