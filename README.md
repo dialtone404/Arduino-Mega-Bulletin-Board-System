@@ -30,7 +30,7 @@ An old-school Bulletin Board System (BBS) that runs on an Arduino Mega!
 ![Message Viewer](arduino_bbs6.PNG)
 
 
-# Arduino Mega Terminal OS
+# Arduino Mega  OS
 
 **Enhanced BBS-Style System v3.0**
 
