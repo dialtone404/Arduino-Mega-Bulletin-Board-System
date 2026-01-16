@@ -1373,7 +1373,7 @@ void handleUtilitiesChoice(int choice) {
   }
 }
 
-// STEP 6: Update showSystemLog() function
+// STEP 6: Update showSystemLog() function  -  github.com/dialtone404
 void showSystemLog() {
   client.print(F("\033[2J\033[H"));
   drawBox(CLR_BLUE, "SYSTEM LOG");
