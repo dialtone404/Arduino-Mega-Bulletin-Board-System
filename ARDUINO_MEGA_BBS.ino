@@ -930,15 +930,15 @@ void showHASetupMenu() {
   client.print(CLR_BRIGHT_CYAN);
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
-  client.println(F("  │  [1] Configure Server - Set HA IP and port             │"));
-  client.println(F("  │  [2] Set API Token    - Enter long-lived token         │"));
-  client.println(F("  │  [3] Test Connection  - Verify settings work           │"));
-  client.println(F("  │  [4] Manage Lights    - Add/remove/list lights         │"));
-  client.println(F("  │  [5] Reset Config     - Clear all settings             │"));
+  client.println(F("  │  [1] Configure Server - Set HA IP and port              │"));
+  client.println(F("  │  [2] Set API Token    - Enter long-lived token          │"));
+  client.println(F("  │  [3] Test Connection  - Verify settings work            │"));
+  client.println(F("  │  [4] Manage Lights    - Add/remove/list lights          │"));
+  client.println(F("  │  [5] Reset Config     - Clear all settings              │"));
   client.println(F("  │                                                         │"));
   if (haConfig.configured) {
     client.println(F("  │  [C] Control Lights   - Go to control menu             │"));
-    client.println(F("  │                                                         │"));
+    client.println(F("  │                                                        │"));
   }
   client.println(F("  │  [0] Back to Main Menu                                  │"));
   client.println(F("  │                                                         │"));
@@ -1343,28 +1343,43 @@ void addLightInteractive() {
   char entityId[50];
   int idx = 0;
   unsigned long startTime = millis();
+  bool gotInput = false;
   
   while (millis() - startTime < 60000) {
     if (client.available()) {
       char c = client.read();
       if (c == '\n' || c == '\r') {
-        entityId[idx] = '\0';
-        break;
+        // Skip any extra newline characters
+        delay(10);
+        while (client.available()) {
+          char peek = client.peek();
+          if (peek == '\r' || peek == '\n') {
+            client.read();
+          } else {
+            break;
+          }
+        }
+        if (gotInput) {
+          entityId[idx] = '\0';
+          break;
+        }
       } else if (c == 8 || c == 127) {
         if (idx > 0) {
           idx--;
+          gotInput = (idx > 0);
           client.write(8);
           client.write(' ');
           client.write(8);
         }
       } else if (idx < 49 && c >= 32) {
         entityId[idx++] = c;
+        gotInput = true;
         client.write(c);
       }
     }
   }
   
-  if (idx == 0) {
+  if (!gotInput) {
     client.println();
     client.println(F("Cancelled."));
     delay(1500);
@@ -1378,28 +1393,43 @@ void addLightInteractive() {
   char displayName[30];
   idx = 0;
   startTime = millis();
+  gotInput = false;
   
   while (millis() - startTime < 60000) {
     if (client.available()) {
       char c = client.read();
       if (c == '\n' || c == '\r') {
-        displayName[idx] = '\0';
-        break;
+        // Skip any extra newline characters
+        delay(10);
+        while (client.available()) {
+          char peek = client.peek();
+          if (peek == '\r' || peek == '\n') {
+            client.read();
+          } else {
+            break;
+          }
+        }
+        if (gotInput) {
+          displayName[idx] = '\0';
+          break;
+        }
       } else if (c == 8 || c == 127) {
         if (idx > 0) {
           idx--;
+          gotInput = (idx > 0);
           client.write(8);
           client.write(' ');
           client.write(8);
         }
       } else if (idx < 29 && c >= 32) {
         displayName[idx++] = c;
+        gotInput = true;
         client.write(c);
       }
     }
   }
   
-  if (idx == 0) {
+  if (!gotInput) {
     client.println();
     client.println(F("Cancelled."));
     delay(1500);
@@ -1613,9 +1643,9 @@ void showHomeAssistantMenu() {
   }
   
   client.println(F("  │                                                         │"));
-  client.println(F("  │  [A] Toggle All       - Turn all lights on/off         │"));
-  client.println(F("  │  [C] Check Status     - View current light states      │"));
-  client.println(F("  │  [S] Setup            - Manage configuration           │"));
+  client.println(F("  │  [A] Toggle All       - Turn all lights on/off          │"));
+  client.println(F("  │  [C] Check Status     - View current light states       │"));
+  client.println(F("  │  [S] Setup            - Manage configuration            │"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [0] Back to Main Menu                                  │"));
   client.println(F("  │                                                         │"));
