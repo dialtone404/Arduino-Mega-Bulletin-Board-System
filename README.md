@@ -14,6 +14,10 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 ![Login Screen](arduino_bbs1.PNG)
 
+**Home Assistant Integration**
+
+![Message Board](arduino_bbs8.PNG)
+
 **Main Menu**
 
 ![Main Menu](arduino_bbs2.PNG)
