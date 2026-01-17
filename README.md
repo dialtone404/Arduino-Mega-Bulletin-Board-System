@@ -46,6 +46,23 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 ---
 
+## 🚀 Getting Started
+
+1. Flash the sketch to your **Arduino Mega**
+2. Insert SD card into the Ethernet Shield
+3. Connect Ethernet cable
+4. Power on the Arduino
+5. Check serial monitor for DHCP IP Address 
+6. Open **PuTTY**
+
+   * Connection Type: **Telnet**
+   * Port: **23**
+   * Hostname: (Enter the IP Address you see in Serial Monitor)
+7. Log in and explore
+
+
+---
+
 ## 📟 Features
 
 * **Multi-screen terminal UI (BBS style)**
@@ -143,21 +160,7 @@ Ensure the SD card is properly formatted to FAT32 and inserted **before boot**.
 
 ---
 
-## 🚀 Getting Started
 
-1. Flash the sketch to your **Arduino Mega**
-2. Insert SD card into the Ethernet Shield
-3. Connect Ethernet cable
-4. Power on the Arduino
-5. Check serial monitor for DHCP IP Address 
-6. Open **PuTTY**
-
-   * Connection Type: **Telnet**
-   * Port: **23**
-   * Hostname: (Enter the IP Address you see in Serial Monitor)
-7. Log in and explore
-
----
 
 ## 🛣️ Roadmap / Ideas
 
