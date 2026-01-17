@@ -30,9 +30,6 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 ![Message Board](arduino_bbs5.PNG)
 
-**Home Assistant Integration**
-
-![Message Board](arduino_bbs7.PNG)
 
 **Message Viewer**
 
