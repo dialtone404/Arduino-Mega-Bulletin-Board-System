@@ -336,27 +336,27 @@ void loop() {
 }
 
 void showWelcomeBanner() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   client.print(CLR_BRIGHT_GREEN);
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣄⣠⣀⡀⣀⣠⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀        "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣄⢠⣠⣼⣿⣿⣿⣟⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⢠⣤⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⢦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀      "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣟⣾⣿⣽⣿⣿⣅⠈⠉⠻⣿⣿⣿⣿⣿⡿⠇⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⢀⡶⠒⢉⡀⢠⣤⣶⣶⣿⣷⣆⣀⡀⠀⢲⣖⠒⠀⠀⠀⠀⠀⠀⠀    "));
-  client.println(F("⢀⣤⣾⣶⣦⣤⣤⣶⣿⣿⣿⣿⣿⣿⣽⡿⠻⣷⣀⠀⢻⣿⣿⣿⡿⠟⠀⠀⠀⠀⠀⠀⣤⣶⣶⣤⣀⣀⣬⣷⣦⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣦⣤⣦⣼⣀⠀ "));
-  client.println(F("⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠓⣿⣿⠟⠁⠘⣿⡟⠁⠀⠘⠛⠁⠀⠀⢠⣾⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠏⠙⠁"));
-  client.println(F("⠀⠸⠟⠋⠀⠈⠙⣿⣿⣿⣿⣿⣿⣷⣦⡄⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⣼⣆⢘⣿⣯⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡉⠉⢱⡿⠀⠀⠀⠀⠀  "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⡿⠦⠀⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡗⠀⠈⠀⠀⠀⠀⠀⠀   "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣉⣿⡿⢿⢷⣾⣾⣿⣞⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⣠⠟⠀⠀⠀⠀⠀⠀⠀⠀    "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⠿⠿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣾⣿⣿⣷⣦⣶⣦⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠈⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀    "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣤⡖⠛⠶⠤⡀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠙⣿⣿⠿⢻⣿⣿⡿⠋⢩⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀    "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠧⣤⣦⣤⣄⡀⠀⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠘⣧⠀⠈⣹⡻⠇⢀⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀     "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣤⣀⡀⠀⠀⠀⠀⠀⠀⠈⢽⣿⣿⣿⣿⣿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠹⣷⣴⣿⣷⢲⣦⣤⡀⢀⡀⠀⠀⠀⠀⠀⠀     "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣷⢀⡄⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠂⠛⣆⣤⡜⣟⠋⠙⠂⠀⠀⠀⠀⠀     "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⠉⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣤⣾⣿⣿⣿⣿⣆⠀⠰⠄⠀⠉⠀⠀      "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⠿⠿⣿⣿⣿⠇⠀⠀⢀⠀⠀⠀       "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⡿⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢻⡇⠀⠀⢀⣼⠗⠀⠀        "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠃⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠁⠀⠀⠀         "));
-  client.println(F("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠒⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀           "));
-  client.println(F("                                                                                     "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣄⣠⣀⡀⣀⣠⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀        "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣄⢠⣠⣼⣿⣿⣿⣟⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⢠⣤⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⢦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀      "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣟⣾⣿⣽⣿⣿⣅⠈⠉⠻⣿⣿⣿⣿⣿⡿⠇⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⢀⡶⠒⢉⡀⢠⣤⣶⣶⣿⣷⣆⣀⡀⠀⢲⣖⠒⠀⠀⠀⠀⠀⠀⠀    "));
+  client.println(F("   ⢀⣤⣾⣶⣦⣤⣤⣶⣿⣿⣿⣿⣿⣿⣽⡿⠻⣷⣀⠀⢻⣿⣿⣿⡿⠟⠀⠀⠀⠀⠀⠀⣤⣶⣶⣤⣀⣀⣬⣷⣦⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣦⣤⣦⣼⣀⠀ "));
+  client.println(F("   ⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠓⣿⣿⠟⠁⠘⣿⡟⠁⠀⠘⠛⠁⠀⠀⢠⣾⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠏⠙⠁"));
+  client.println(F("   ⠀⠸⠟⠋⠀⠈⠙⣿⣿⣿⣿⣿⣿⣷⣦⡄⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⣼⣆⢘⣿⣯⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡉⠉⢱⡿⠀⠀⠀⠀⠀  "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⡿⠦⠀⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡗⠀⠈⠀⠀⠀⠀⠀⠀   "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣉⣿⡿⢿⢷⣾⣾⣿⣞⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⣠⠟⠀⠀⠀⠀⠀⠀⠀⠀    "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⠿⠿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣾⣿⣿⣷⣦⣶⣦⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠈⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀    "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣤⡖⠛⠶⠤⡀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠙⣿⣿⠿⢻⣿⣿⡿⠋⢩⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀    "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠧⣤⣦⣤⣄⡀⠀⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠘⣧⠀⠈⣹⡻⠇⢀⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀     "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣤⣀⡀⠀⠀⠀⠀⠀⠀⠈⢽⣿⣿⣿⣿⣿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠹⣷⣴⣿⣷⢲⣦⣤⡀⢀⡀⠀⠀⠀⠀⠀⠀     "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣷⢀⡄⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠂⠛⣆⣤⡜⣟⠋⠙⠂⠀⠀⠀⠀⠀     "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⠉⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣤⣾⣿⣿⣿⣿⣆⠀⠰⠄⠀⠉⠀⠀      "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⠿⠿⣿⣿⣿⠇⠀⠀⢀⠀⠀⠀       "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⡿⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢻⡇⠀⠀⢀⣼⠗⠀⠀        "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠃⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠁⠀⠀⠀         "));
+  client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠒⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀           "));
+  client.println(F("                                                                                        "));
   client.println(F("╔════════════════════════════════════════════════════════════════════════╗"));
   client.println(F("║                                                                        ║"));
   client.println(F("║              ╔═╗╦═╗╔╦╗╦ ╦╦╔╗╔╔═╗  ╔╦╗╔═╗╔═╗╔═╗  ╔═╗╔═╗                 ║"));
@@ -514,7 +514,7 @@ bool verifyLogin(const char* username, const char* password) {
 }
 
 void showMainMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_MAIN;
   
   drawBox(CLR_RED, "MAIN MENU");
@@ -652,7 +652,7 @@ void handleMainMenuChoice(int choice) {
 }
 
 void showEditorMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_EDITOR_MENU;
   
   drawBox(CLR_GREEN, "TEXT EDITOR");
@@ -893,7 +893,7 @@ void deleteLight(int index) {
 }
 
 void showHASetupMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HA_SETUP;
   
   drawBox(CLR_MAGENTA, "HOME ASSISTANT SETUP");
@@ -937,8 +937,8 @@ void showHASetupMenu() {
   client.println(F("  │  [5] Reset Config     - Clear all settings              │"));
   client.println(F("  │                                                         │"));
   if (haConfig.configured) {
-    client.println(F("  │  [C] Control Lights   - Go to control menu             │"));
-    client.println(F("  │                                                        │"));
+    client.println(F("  │  [C] Control Lights   - Go to control menu            │"));
+    client.println(F("  │                                                       │"));
   }
   client.println(F("  │  [0] Back to Main Menu                                  │"));
   client.println(F("  │                                                         │"));
@@ -1263,7 +1263,7 @@ void resetHAConfig() {
 }
 
 void showManageLightsMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HA_MANAGE_LIGHTS;
   
   drawBox(CLR_CYAN, "MANAGE LIGHTS");
@@ -1526,7 +1526,7 @@ delay(2000);
 showManageLightsMenu();
 }
 void listAllLights() {
-client.print(F("\033[2J\033[H"));
+client.print(F("\033[3J\033[2J\033[H"));
 drawBox(CLR_CYAN, "ALL CONFIGURED LIGHTS");
 client.println();
 int lightCount = countLights();
@@ -1599,7 +1599,7 @@ void createNewNote() {
 }
 
 void showHomeAssistantMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HOME_ASSISTANT;
   
   drawBox(CLR_MAGENTA, "HOME ASSISTANT CONTROL");
@@ -1828,7 +1828,7 @@ void toggleAllLights() {
 }
 
 void checkAllLightsStatus() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_CYAN, "LIGHT STATUS");
   client.println();
   
@@ -2090,7 +2090,7 @@ void loadFileToEditor() {
 
 // STEP 4: Update listAllNotes() function
 void listAllNotes() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_GREEN, "ALL NOTES");
   client.println();
   
@@ -2125,7 +2125,7 @@ void listAllNotes() {
 }
 
 void startTextEditor() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_EDITOR;
   
   drawBox(CLR_GREEN, "TEXT EDITOR");
@@ -2227,7 +2227,7 @@ void saveEditorFile() {
 }
 
 void startCalculator() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_CALCULATOR;
   
   drawBox(CLR_YELLOW, "CALCULATOR");
@@ -2343,7 +2343,7 @@ void handleCalculatorInput() {
 }
 
 void showWeather() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_WEATHER;
   
   drawBox(CLR_CYAN, "WEATHER INFORMATION");
@@ -2374,7 +2374,7 @@ void showWeather() {
 }
 
 void showStocks() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_STOCKS;
   
   drawBox(CLR_GREEN, "STOCK MARKET INFORMATION");
@@ -2408,7 +2408,7 @@ void showStocks() {
 }
 
 void showGamesMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_GAMES;
   
   drawBox(CLR_MAGENTA, "GAMES");
@@ -2453,7 +2453,7 @@ void handleGamesChoice(int choice) {
 }
 
 void startGuessGame() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_GAME_GUESS;
   
   drawBox(CLR_MAGENTA, "NUMBER GUESSING GAME");
@@ -2526,7 +2526,7 @@ void saveGameScore(int attempts) {
 
 // STEP 5: Update showHighScores() function
 void showHighScores() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_MAGENTA, "HIGH SCORES");
   
   client.println();
@@ -2578,7 +2578,7 @@ void showHighScores() {
 }
 
 void showUtilitiesMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_UTILITIES;
   
   drawBox(CLR_BLUE, "UTILITIES");
@@ -2630,7 +2630,7 @@ void handleUtilitiesChoice(int choice) {
 
 // STEP 6: Update showSystemLog() function
 void showSystemLog() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_BLUE, "SYSTEM LOG");
   
   client.println();
@@ -2664,7 +2664,7 @@ void showSystemLog() {
 }
 
 void showMessageMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_MESSAGES;
   
   drawBox(CLR_MAGENTA, "MESSAGE BOARD");
@@ -2733,7 +2733,7 @@ void showMessageCount() {
 
 // STEP 8: Update readMessages() function
 void readMessages() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_MAGENTA, "MESSAGE BOARD");
   client.println();
   
@@ -2883,7 +2883,7 @@ void printUptimeToFile(File &f, unsigned long seconds) {
 }
 
 void showFileMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_FILES;
   
   drawBox(CLR_BLUE, "FILE MANAGER");
@@ -3024,7 +3024,7 @@ void viewNote() {
 
 // STEP 10: Update listFiles() function
 void listFiles() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_BLUE, "FILE LISTING");
   client.println();
   
@@ -3068,7 +3068,7 @@ void listFiles() {
 }
 
 void showStatsMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_STATS;
   
   drawBox(CLR_MAGENTA, "SYSTEM STATISTICS");
@@ -3161,7 +3161,7 @@ void printUptimeFormatted(unsigned long seconds) {
 }
 
 void showSettingsMenu() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_SETTINGS;
   
   drawBox(CLR_YELLOW, "SETTINGS");
@@ -3213,7 +3213,7 @@ void handleSettingsChoice(int choice) {
 
 // STEP 11: Update showAbout() function
 void showAbout() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_CYAN, "ABOUT THIS SYSTEM");
   
   client.println();
@@ -3242,7 +3242,7 @@ void showAbout() {
 
 // STEP 12: Update showUserManagement() function
 void showUserManagement() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_RED, "USER MANAGEMENT");
   
   client.println();
@@ -3288,7 +3288,7 @@ void showUserManagement() {
 
 // STEP 13: Update showNetworkInfo() function
 void showNetworkInfo() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   drawBox(CLR_BLUE, "NETWORK INFORMATION");
   
   client.println();
@@ -3319,7 +3319,7 @@ void showNetworkInfo() {
 }
 
 void showNewsReader() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_NEWS;
   
   drawBox(CLR_CYAN, "NEWS READER");
@@ -3351,7 +3351,7 @@ void showNewsReader() {
 }
 
 void startCommandMode() {
-  client.print(F("\033[2J\033[H"));
+  client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_COMMAND;
   
   drawBox(CLR_RED, "COMMAND MODE");
@@ -3394,7 +3394,7 @@ void handleCommandInput() {
     client.println(F("  date        - Show time"));
     client.println(F("  exit        - Return to menu"));
   } else if (strcmp(cmd, "clear") == 0) {
-    client.print(F("\033[2J\033[H"));
+    client.print(F("\033[3J\033[2J\033[H"));
   } else if (strcmp(cmd, "whoami") == 0) {
     client.println(session.username);
   } else if (strcmp(cmd, "uptime") == 0) {
