@@ -154,7 +154,7 @@ Ensure the SD card is properly formatted to FAT32 and inserted **before boot**.
 
    * Connection Type: **Telnet**
    * Port: **23**
-   * Hostname: Arduino IP
+   * Hostname: (Enter the IP Address you see in Serial Monitor)
 7. Log in and explore
 
 ---
