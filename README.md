@@ -36,7 +36,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 **Message Viewer**
 
-![Message Viewer](arduino_bbs6.PNG)
+![Message Viewer](arduino_bbs6.PNG) 
 
 
 # Arduino Mega 2560 OS
