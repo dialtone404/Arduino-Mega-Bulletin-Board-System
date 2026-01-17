@@ -58,7 +58,8 @@ enum MenuState {
   MENU_UTILITIES,
   MENU_HOME_ASSISTANT,
   MENU_HA_SETUP,
-  MENU_HA_MANAGE_LIGHTS
+  MENU_HA_MANAGE_LIGHTS,
+  MENU_HA_MANAGE_SENSORS  // ADD THIS LINE
 };
 
 // STEP 1: Update the Session struct (add new variable)
@@ -90,6 +91,12 @@ struct HAConfig {
 struct HALight {
   char entityId[50];
   char displayName[30];
+};
+
+struct HASensor {
+  char entityId[50];
+  char displayName[30];
+  char unit[10];  // Unit of measurement (°F, %, hPa, etc.)
 };
 
 // Command buffer
@@ -934,11 +941,11 @@ void showHASetupMenu() {
   client.println(F("  │  [2] Set API Token    - Enter long-lived token          │"));
   client.println(F("  │  [3] Test Connection  - Verify settings work            │"));
   client.println(F("  │  [4] Manage Lights    - Add/remove/list lights          │"));
-  client.println(F("  │  [5] Reset Config     - Clear all settings              │"));
-  client.println(F("  │                                                         │"));
+  client.println(F("  │  [5] Manage Sensors   - Add/remove/list sensors         │"));
+  client.println(F("  │  [6] Reset Config     - Clear all settings              │"));
   if (haConfig.configured) {
-    client.println(F("  │  [C] Control Lights   - Go to control menu            │"));
-    client.println(F("  │                                                       │"));
+    client.println(F("  │  [C] Control Lights   - Go to control menu             │"));
+    client.println(F("  │                                                        │"));
   }
   client.println(F("  │  [0] Back to Main Menu                                  │"));
   client.println(F("  │                                                         │"));
@@ -976,8 +983,11 @@ void handleHASetupChoice(int choice) {
       showManageLightsMenu();
       break;
     case 5:
+      showManageSensorsMenu();
+     break;
+    case 6:  // This was case 5 before
       resetHAConfig();
-      break;
+    break;
     case 0:
       showMainMenu();
       break;
@@ -1245,6 +1255,7 @@ void resetHAConfig() {
   if (idx > 0 && (response[0] == 'y' || response[0] == 'Y')) {
     SD.remove("ha/config.txt");
     SD.remove("ha/lights.txt");
+	SD.remove("ha/sensors.txt");  // ADD THIS LINE
     
     haConfig.server[0] = '\0';
     haConfig.port = 0;
@@ -1554,6 +1565,547 @@ client.println(F("Press Enter to continue..."));
 session.waitingForContinue = true;
 session.returnToMenu = MENU_HA_MANAGE_LIGHTS;
 }
+
+void addSensor(const char* entityId, const char* displayName, const char* unit) {
+  File f = SD.open("ha/sensors.txt", FILE_WRITE);
+  if (f) {
+    f.print(entityId);
+    f.print(":");
+    f.print(displayName);
+    f.print(":");
+    f.println(unit);
+    f.close();
+    return;
+  }
+}
+
+int countSensors() {
+  File f = SD.open("ha/sensors.txt", FILE_READ);
+  if (!f) return 0;
+  
+  int count = 0;
+  char line[100];
+  int idx = 0;
+  
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        count++;
+        idx = 0;
+      }
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+  
+  f.close();
+  return count;
+}
+
+bool getSensor(int index, HASensor& sensor) {
+  File f = SD.open("ha/sensors.txt", FILE_READ);
+  if (!f) return false;
+  
+  int currentIndex = 0;
+  char line[100];
+  int idx = 0;
+  bool found = false;
+  
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        if (currentIndex == index) {
+          line[idx] = '\0';
+          char* entity = strtok(line, ":");
+          char* name = strtok(NULL, ":");
+          char* unit = strtok(NULL, ":");
+          
+          if (entity && name) {
+            strncpy(sensor.entityId, entity, 49);
+            sensor.entityId[49] = '\0';
+            strncpy(sensor.displayName, name, 29);
+            sensor.displayName[29] = '\0';
+            if (unit) {
+              strncpy(sensor.unit, unit, 9);
+              sensor.unit[9] = '\0';
+            } else {
+              sensor.unit[0] = '\0';
+            }
+            found = true;
+          }
+          break;
+        }
+        currentIndex++;
+        idx = 0;
+      }
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+  
+  f.close();
+  return found;
+}
+
+void deleteSensor(int index) {
+  File fRead = SD.open("ha/sensors.txt", FILE_READ);
+  if (!fRead) return;
+  
+  File fTemp = SD.open("ha/temp.txt", FILE_WRITE);
+  if (!fTemp) {
+    fRead.close();
+    return;
+  }
+  
+  int currentIndex = 0;
+  char line[100];
+  int idx = 0;
+  
+  while (fRead.available()) {
+    char c = fRead.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        if (currentIndex != index) {
+          line[idx] = '\0';
+          fTemp.println(line);
+        }
+        currentIndex++;
+        idx = 0;
+      }
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+  
+  fRead.close();
+  fTemp.close();
+  
+  SD.remove("ha/sensors.txt");
+  File fTempRead = SD.open("ha/temp.txt", FILE_READ);
+  File fNew = SD.open("ha/sensors.txt", FILE_WRITE);
+  
+  if (fTempRead && fNew) {
+    while (fTempRead.available()) {
+      fNew.write(fTempRead.read());
+    }
+    fTempRead.close();
+    fNew.close();
+  }
+  
+  SD.remove("ha/temp.txt");
+}
+
+void showManageSensorsMenu() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  session.currentMenu = MENU_HA_MANAGE_SENSORS;
+  
+  drawBox(CLR_GREEN, "MANAGE SENSORS");
+  
+  client.println();
+  
+  int sensorCount = countSensors();
+  
+  if (sensorCount > 0) {
+    client.print(CLR_BRIGHT_YELLOW);
+    client.println(F("  Configured Sensors:"));
+    client.print(CLR_RESET);
+    client.println(F("  ───────────────────────────────────────────────────────────"));
+    
+    for (int i = 0; i < sensorCount; i++) {
+      HASensor sensor;
+      if (getSensor(i, sensor)) {
+        client.print(F("  ["));
+        client.print(i + 1);
+        client.print(F("] "));
+        client.print(sensor.displayName);
+        client.print(F(" ("));
+        client.print(sensor.entityId);
+        client.print(F(") ["));
+        client.print(sensor.unit);
+        client.println(F("]"));
+      }
+    }
+    client.println();
+  } else {
+    client.print(CLR_YELLOW);
+    client.println(F("  No sensors configured yet."));
+    client.print(CLR_RESET);
+    client.println();
+  }
+  
+  client.print(CLR_BRIGHT_CYAN);
+  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [1] Add Sensor       - Add a new sensor entity         │"));
+  client.println(F("  │  [2] Remove Sensor    - Delete a sensor from list       │"));
+  client.println(F("  │  [3] List All Sensors - Show all configured sensors     │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [0] Back             - Return to setup menu            │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  └─────────────────────────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  showPrompt();
+}
+
+void handleManageSensorsChoice(int choice) {
+  switch (choice) {
+    case 1:
+      addSensorInteractive();
+      break;
+    case 2:
+      removeSensorInteractive();
+      break;
+    case 3:
+      listAllSensors();
+      break;
+    case 0:
+      showHASetupMenu();
+      break;
+    default:
+      client.println(F("Invalid choice."));
+      showPrompt();
+  }
+}
+
+void addSensorInteractive() {
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("Enter entity ID (e.g., sensor.temperature): "));
+  client.print(CLR_RESET);
+  
+  char entityId[50];
+  int idx = 0;
+  unsigned long startTime = millis();
+  bool gotInput = false;
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        delay(10);
+        while (client.available()) {
+          char peek = client.peek();
+          if (peek == '\r' || peek == '\n') {
+            client.read();
+          } else {
+            break;
+          }
+        }
+        if (gotInput) {
+          entityId[idx] = '\0';
+          break;
+        }
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          gotInput = (idx > 0);
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 49 && c >= 32) {
+        entityId[idx++] = c;
+        gotInput = true;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (!gotInput) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showManageSensorsMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("Enter display name (e.g., Living Room Temp): "));
+  
+  char displayName[30];
+  idx = 0;
+  startTime = millis();
+  gotInput = false;
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        delay(10);
+        while (client.available()) {
+          char peek = client.peek();
+          if (peek == '\r' || peek == '\n') {
+            client.read();
+          } else {
+            break;
+          }
+        }
+        if (gotInput) {
+          displayName[idx] = '\0';
+          break;
+        }
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          gotInput = (idx > 0);
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 29 && c >= 32) {
+        displayName[idx++] = c;
+        gotInput = true;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (!gotInput) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showManageSensorsMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("Enter unit (e.g., °F, %, hPa): "));
+  
+  char unit[10];
+  idx = 0;
+  startTime = millis();
+  gotInput = false;
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        delay(10);
+        while (client.available()) {
+          char peek = client.peek();
+          if (peek == '\r' || peek == '\n') {
+            client.read();
+          } else {
+            break;
+          }
+        }
+        if (gotInput) {
+          unit[idx] = '\0';
+          break;
+        } else {
+          unit[0] = '\0';
+          break;
+        }
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          gotInput = (idx > 0);
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 9 && c >= 32) {
+        unit[idx++] = c;
+        gotInput = true;
+        client.write(c);
+      }
+    }
+  }
+  
+  addSensor(entityId, displayName, unit);
+  
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("✓ Sensor added: "));
+  client.print(displayName);
+  client.print(F(" ("));
+  client.print(entityId);
+  client.println(F(")"));
+  client.print(CLR_RESET);
+  
+  delay(2000);
+  showManageSensorsMenu();
+}
+
+void removeSensorInteractive() {
+  int sensorCount = countSensors();
+  
+  if (sensorCount == 0) {
+    client.println();
+    client.println(F("No sensors to remove."));
+    delay(2000);
+    showManageSensorsMenu();
+    return;
+  }
+  
+  client.println();
+  client.println(F("Which sensor to remove?"));
+  
+  for (int i = 0; i < sensorCount; i++) {
+    HASensor sensor;
+    if (getSensor(i, sensor)) {
+      client.print(F("  ["));
+      client.print(i + 1);
+      client.print(F("] "));
+      client.println(sensor.displayName);
+    }
+  }
+  
+  client.println();
+  client.print(F("Enter number (1-"));
+  client.print(sensorCount);
+  client.print(F("): "));
+  
+  char numStr[5];
+  int idx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        numStr[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 4 && c >= '0' && c <= '9') {
+        numStr[idx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (idx == 0) {
+    client.println();
+    showManageSensorsMenu();
+    return;
+  }
+  
+  int num = atoi(numStr);
+  
+  if (num >= 1 && num <= sensorCount) {
+    HASensor sensor;
+    if (getSensor(num - 1, sensor)) {
+      deleteSensor(num - 1);
+      client.println();
+      client.print(CLR_BRIGHT_GREEN);
+      client.print(F("✓ Removed: "));
+      client.println(sensor.displayName);
+      client.print(CLR_RESET);
+    }
+  } else {
+    client.println();
+    client.println(F("Invalid number."));
+  }
+  
+  delay(2000);
+  showManageSensorsMenu();
+}
+
+void listAllSensors() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  drawBox(CLR_GREEN, "ALL CONFIGURED SENSORS");
+  client.println();
+  
+  int sensorCount = countSensors();
+  
+  if (sensorCount == 0) {
+    client.println(F("  No sensors configured."));
+  } else {
+    for (int i = 0; i < sensorCount; i++) {
+      HASensor sensor;
+      if (getSensor(i, sensor)) {
+        client.print(CLR_BRIGHT_YELLOW);
+        client.print(F("  ┌─[ "));
+        client.print(sensor.displayName);
+        client.println(F(" ]"));
+        client.print(CLR_RESET);
+        client.print(F("  │ Entity ID: "));
+        client.println(sensor.entityId);
+        client.print(F("  │ Unit: "));
+        if (strlen(sensor.unit) > 0) {
+          client.println(sensor.unit);
+        } else {
+          client.println(F("(none)"));
+        }
+        client.print(CLR_BRIGHT_YELLOW);
+        client.println(F("  └────────────────────────────────────────────"));
+        client.print(CLR_RESET);
+        client.println();
+      }
+    }
+  }
+  
+  client.println(F("Press Enter to continue..."));
+  session.waitingForContinue = true;
+  session.returnToMenu = MENU_HA_MANAGE_SENSORS;
+}
+
+String getSensorValue(const char* entityId) {
+  EthernetClient haClient;
+  
+  if (haClient.connect(haConfig.server, haConfig.port)) {
+    haClient.print(F("GET /api/states/"));
+    haClient.print(entityId);
+    haClient.println(F(" HTTP/1.1"));
+    haClient.print(F("Host: "));
+    haClient.print(haConfig.server);
+    haClient.print(F(":"));
+    haClient.println(haConfig.port);
+    haClient.print(F("Authorization: Bearer "));
+    haClient.println(haConfig.token);
+    haClient.println(F("Connection: close"));
+    haClient.println();
+    
+    unsigned long timeout = millis();
+    while (haClient.connected() && millis() - timeout < 5000) {
+      if (haClient.available()) break;
+      delay(10);
+    }
+    
+    String response = "";
+    bool inBody = false;
+    
+    while (haClient.available()) {
+      String line = haClient.readStringUntil('\n');
+      
+      if (line == "\r" || line.length() == 0) {
+        inBody = true;
+        continue;
+      }
+      
+      if (inBody) {
+        response += line;
+      }
+    }
+    
+    haClient.stop();
+    
+    if (response.length() > 0) {
+      int statePos = response.indexOf("\"state\":");
+      if (statePos >= 0) {
+        int quoteStart = response.indexOf("\"", statePos + 8);
+        int quoteEnd = response.indexOf("\"", quoteStart + 1);
+        
+        if (quoteStart >= 0 && quoteEnd >= 0) {
+          return response.substring(quoteStart + 1, quoteEnd);
+        }
+      }
+    }
+  }
+  
+  return "";
+}
+
 
 void createNewNote() {
   client.println();
@@ -1986,6 +2538,9 @@ void handleMenuInput() {
     case MENU_HA_MANAGE_LIGHTS:
       handleManageLightsChoice(choice);
       break;
+	 case MENU_HA_MANAGE_SENSORS:
+      handleManageSensorsChoice(choice);
+      break;
     default:
       showMainMenu();
   }
@@ -2349,23 +2904,64 @@ void showWeather() {
   drawBox(CLR_CYAN, "WEATHER INFORMATION");
   
   client.println();
-  client.print(CLR_BRIGHT_YELLOW);
-  client.println(F("  Current Weather Conditions"));
-  client.print(CLR_RESET);
-  client.println(F("  ───────────────────────────────────────────────────────────"));
-  client.println();
   
-  client.println(F("  Location: San Francisco, CA"));
-  client.println(F("  Temperature: 68°F (20°C)"));
-  client.println(F("  Conditions: Partly Cloudy"));
-  client.println(F("  Humidity: 65%"));
-  client.println(F("  Wind: 12 mph NW"));
-  client.println(F("  Pressure: 30.12 inHg"));
-  client.println();
-  client.print(CLR_YELLOW);
-  client.println(F("  Note: Weather data is simulated. Connect to weather"));
-  client.println(F("  API service for real-time data."));
-  client.print(CLR_RESET);
+  int sensorCount = countSensors();
+  
+  if (!haConfig.configured || sensorCount == 0) {
+    client.print(CLR_YELLOW);
+    if (!haConfig.configured) {
+      client.println(F("  ⚠ Home Assistant not configured"));
+    } else {
+      client.println(F("  ⚠ No sensors configured"));
+      client.println(F("  Go to Home Assistant Setup > Manage Sensors"));
+    }
+    client.println(F("  Showing simulated data..."));
+    client.print(CLR_RESET);
+    client.println();
+    client.println(F("  ───────────────────────────────────────────────────────────"));
+    client.println();
+    client.println(F("  Location: San Francisco, CA"));
+    client.println(F("  Temperature: 68°F (20°C)"));
+    client.println(F("  Conditions: Partly Cloudy"));
+    client.println(F("  Humidity: 65%"));
+    client.println(F("  Wind: 12 mph NW"));
+    client.println(F("  Pressure: 30.12 inHg"));
+  } else {
+    client.print(CLR_BRIGHT_YELLOW);
+    client.println(F("  Fetching sensor data from Home Assistant..."));
+    client.print(CLR_RESET);
+    client.println(F("  ───────────────────────────────────────────────────────────"));
+    client.println();
+    
+    for (int i = 0; i < sensorCount; i++) {
+      HASensor sensor;
+      if (getSensor(i, sensor)) {
+        client.print(F("  "));
+        client.print(sensor.displayName);
+        client.print(F(": "));
+        
+        String value = getSensorValue(sensor.entityId);
+        
+        if (value.length() > 0) {
+          client.print(CLR_BRIGHT_GREEN);
+          client.print(value);
+          if (strlen(sensor.unit) > 0) {
+            client.print(F(" "));
+            client.print(sensor.unit);
+          }
+          client.print(CLR_RESET);
+        } else {
+          client.print(CLR_RED);
+          client.print(F("unavailable"));
+          client.print(CLR_RESET);
+        }
+        client.println();
+        
+        delay(200);
+      }
+    }
+  }
+  
   client.println();
   client.println(F("  [0] Back to Main Menu"));
   client.println();
