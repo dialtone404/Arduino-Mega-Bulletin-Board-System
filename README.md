@@ -31,13 +31,13 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 ![Weather Conditions](images/Temperature_Data.PNG)
 
-**Message Board**
+**Secure Message Board**
 
-![Message Board](images/Message_Board.PNG)
+![Message Board](images/email_mega.PNG)
 
-**Message Viewer**
+**Message Encryption**
 
-![Message Viewer](images/Messages.PNG) 
+![Message Viewer](images/Encryption_Mail.PNG) 
 
 # Arduino Mega 2560 OS
 
