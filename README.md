@@ -12,33 +12,31 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 **Login Screen**
 
-![Login Screen](arduino_bbs1.PNG)
+![Login Screen](images/Login.PNG)
 
 **Home Assistant Integration**
 
-![Message Board](arduino_bbs8.PNG)
+![Home Assistant](images/HAOS.PNG)
+
+**Control Smart Lights**
+
+![Home Assistant](images/Light_Controls.PNG)
 
 **Main Menu**
 
-![Main Menu](arduino_bbs2.PNG)
+![Main Menu](images/Main_Menu.PNG)
 
-**Weather Conditions**
+**Weather Conditions / Temperature Data**
 
-![Weather Conditions](arduino_bbs3.PNG)
-
-**Games**
-
-![Games](arduino_bbs4.PNG)
+![Weather Conditions](images/Temperature Data.PNG)
 
 **Message Board**
 
-![Message Board](arduino_bbs5.PNG)
-
+![Message Board](images/Message_Board.PNG)
 
 **Message Viewer**
 
-![Message Viewer](arduino_bbs6.PNG) 
-
+![Message Viewer](images/Messages.PNG) 
 
 # Arduino Mega 2560 OS
 
