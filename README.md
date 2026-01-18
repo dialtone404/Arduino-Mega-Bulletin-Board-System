@@ -28,7 +28,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 **Weather Conditions / Temperature Data**
 
-![Weather Conditions](images/Temperature Data.PNG)
+![Weather Conditions](images/Temperature_Data.PNG)
 
 **Message Board**
 
