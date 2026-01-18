@@ -372,7 +372,7 @@ void showWelcomeBanner() {
   client.println(F("║                                                                        ║"));
   client.println(F("║                    Terminal Operating System v3.0                      ║"));
   client.println(F("║                         Authorized Users Only                          ║"));
-  client.println(F("║                      System --- Copyright 1989                         ║"));
+  client.println(F("║                    https://github.com/dialtone404/                     ║"));
   client.println(F("╚════════════════════════════════════════════════════════════════════════╝"));
   client.print(CLR_RESET);
   client.println();
