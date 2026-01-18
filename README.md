@@ -5,6 +5,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
     ⚠️ This project is experimental and a work in progress. Some features may be incomplete or buggy.
 
+![Arduino](images/Arduino_Mega_Ethernet.PNG)
 
 ---
 
