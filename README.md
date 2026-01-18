@@ -25,7 +25,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 **Main Menu**
 
-![Main Menu](images/Main_Menu.PNG)
+![Main Menu](images/Main_Menu2.PNG)
 
 **Weather Conditions / Temperature Data**
 
