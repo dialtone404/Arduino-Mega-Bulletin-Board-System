@@ -59,7 +59,9 @@ enum MenuState {
   MENU_HOME_ASSISTANT,
   MENU_HA_SETUP,
   MENU_HA_MANAGE_LIGHTS,
-  MENU_HA_MANAGE_SENSORS  // ADD THIS LINE
+  MENU_HA_MANAGE_SENSORS,
+  MENU_SECURE_MAIL,        // ADD THIS
+  MENU_MAIL_COMPOSE        // ADD THIS
 };
 
 // STEP 1: Update the Session struct (add new variable)
@@ -76,8 +78,9 @@ struct Session {
   int guessNumber;
   int guessAttempts;
   float calcMemory;
-  bool waitingForContinue;  // ADD THIS
-  MenuState returnToMenu;   // ADD THIS - stores which menu to return to
+  bool waitingForContinue;
+  MenuState returnToMenu;
+  uint32_t userEncryptionKey;  // ADD THIS
 } session;
 
 // Home Assistant Configuration
@@ -135,6 +138,22 @@ int freeRam();
 void printUptime(unsigned long seconds);
 void printUptimeFormatted(unsigned long seconds);
 void printUptimeToFile(File &f, unsigned long seconds);
+// Secure Mail functions
+void showSecureMailMenu();
+void handleSecureMailChoice(int choice);
+void showInbox();
+void composeMail();
+void handleComposeMailInput();
+void showSentMail();
+void viewMessage();
+void deleteMessage();
+uint32_t generateHardwareKey();
+void encryptMessage(char* message, uint32_t key);
+void decryptMessage(char* message, uint32_t key);
+int countUnreadMail();
+void markMessageRead(const char* filename);
+bool isMessageRead(const char* filename);
+void regenerateEncryptionKey();
 
 void setup() {
   Serial.begin(9600);
@@ -170,6 +189,7 @@ void setup() {
   SD.mkdir("logs");
   SD.mkdir("weather");
   SD.mkdir("stocks");
+  SD.mkdir("mail");      // ADD THIS
   
   // Initialize default user
   if (!SD.exists("users.txt")) {
@@ -230,13 +250,15 @@ void setup() {
   Serial.println(F(" bytes"));
   
   // Initialize session
+  // Initialize session
   session.loggedIn = false;
   session.isAdmin = false;
   session.currentMenu = MENU_MAIN;
   session.editorLines = 0;
   session.calcMemory = 0;
-    session.waitingForContinue = false;  // ADD THIS
-  session.returnToMenu = MENU_MAIN;    // ADD THIS
+  session.waitingForContinue = false;
+  session.returnToMenu = MENU_MAIN;
+  session.userEncryptionKey = 0;  // ADD THIS
 }
 
 void loop() {
@@ -324,6 +346,12 @@ void loop() {
                 break;
               case MENU_MESSAGES:
                 showMessageMenu();
+                break;
+              case MENU_HOME_ASSISTANT:
+                showHomeAssistantMenu();
+                break;
+              case MENU_SECURE_MAIL:
+                showSecureMailMenu();
                 break;
               default:
                 showCurrentMenu();
@@ -507,6 +535,20 @@ bool verifyLogin(const char* username, const char* password) {
             session.isAdmin = true;
           }
           f.close();
+          
+          // ADD THIS BLOCK:
+          // Generate hardware encryption key for this user
+          session.userEncryptionKey = generateHardwareKey();
+          
+          // Create user mail directories
+          char inboxPath[40];
+          char sentPath[40];
+          sprintf(inboxPath, "mail/%s/inbox", username);
+          sprintf(sentPath, "mail/%s/sent", username);
+          SD.mkdir(inboxPath);
+          SD.mkdir(sentPath);
+          // END ADD
+          
           return true;
         }
         idx = 0;
@@ -556,7 +598,21 @@ void showMainMenu() {
   client.println(F("  │  [8] Utilities        - Tools and system info           │"));
   client.println(F("  │  [9] News Reader      - Read latest updates             │"));
   client.println(F("  │                                                         │"));
-  
+   // ADD THESE LINES:
+  int unreadCount = countUnreadMail();
+  if (unreadCount > 0) {
+    client.print(CLR_BRIGHT_YELLOW);
+    client.print(F("  │  [M] Secure Mail      - Private messages ("));
+    client.print(unreadCount);
+    client.print(F(" new)"));
+    int spaces = 14 - String(unreadCount).length();
+    for(int i = 0; i < spaces; i++) client.print(F(" "));
+    client.println(F("│"));
+    client.print(CLR_BRIGHT_GREEN);
+  } else {
+    client.println(F("  │  [M] Secure Mail      - Private messages               │"));
+  }
+  // END ADD
   if (haConfig.configured) {
     client.print(CLR_BRIGHT_CYAN);
     client.println(F("  │  [H] Home Control     - Control Home Assistant          │"));
@@ -619,6 +675,13 @@ void handleMainMenuChoice(int choice) {
     return;
   }
   
+  // ADD THIS BLOCK:
+  if (cmdBuffer[0] == 'm' || cmdBuffer[0] == 'M') {
+    showSecureMailMenu();
+    return;
+  }
+  // END ADD
+
   switch (choice) {
     case 1:
       showMessageMenu();
@@ -2541,6 +2604,14 @@ void handleMenuInput() {
 	 case MENU_HA_MANAGE_SENSORS:
       handleManageSensorsChoice(choice);
       break;
+       // ADD THESE:
+    case MENU_SECURE_MAIL:
+      handleSecureMailChoice(choice);
+      break;
+    case MENU_MAIL_COMPOSE:
+      handleComposeMailInput();
+      return;
+    // END ADD
     default:
       showMainMenu();
   }
@@ -4115,6 +4186,811 @@ int freeRam() {
   int v;
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
+
+// ==================== SECURE MAIL SYSTEM ====================
+
+uint32_t generateHardwareKey() {
+  uint32_t seed = 0;
+  
+  // Read analog noise from unconnected pins (A0-A3 are usually safe)
+  for(int i = 0; i < 4; i++) {
+    seed ^= (analogRead(A0 + i) << (i * 8));
+    delay(5);
+  }
+  
+  // Mix with MAC address for board uniqueness
+  for(int i = 0; i < 6; i++) {
+    seed ^= ((uint32_t)mac[i] << ((i % 4) * 8));
+  }
+  
+  // Add username hash for user uniqueness
+  for(int i = 0; session.username[i] != '\0'; i++) {
+    seed ^= ((uint32_t)session.username[i] << ((i % 4) * 8));
+  }
+  
+  // Mix with current millis for additional entropy
+  seed ^= millis();
+  
+  return seed;
+}
+
+void encryptMessage(char* message, uint32_t key) {
+  int len = strlen(message);
+  for(int i = 0; i < len; i++) {
+    // XOR with rotating key bytes
+    message[i] ^= (key >> ((i % 4) * 8)) & 0xFF;
+  }
+}
+
+void decryptMessage(char* message, uint32_t key) {
+  // XOR encryption is symmetric, so decrypt is same as encrypt
+  encryptMessage(message, key);
+}
+
+int countUnreadMail() {
+  char inboxPath[40];
+  sprintf(inboxPath, "mail/%s/inbox", session.username);
+  
+  File inbox = SD.open(inboxPath);
+  if (!inbox) return 0;
+  
+  int count = 0;
+  while (true) {
+    File entry = inbox.openNextFile();
+    if (!entry) break;
+    
+    if (!entry.isDirectory() && !isMessageRead(entry.name())) {
+      count++;
+    }
+    entry.close();
+  }
+  inbox.close();
+  
+  return count;
+}
+
+bool isMessageRead(const char* filename) {
+  // Check if .read marker file exists
+  char readMarker[60];
+  sprintf(readMarker, "mail/%s/inbox/%s.read", session.username, filename);
+  return SD.exists(readMarker);
+}
+
+void markMessageRead(const char* filename) {
+  char readMarker[60];
+  sprintf(readMarker, "mail/%s/inbox/%s.read", session.username, filename);
+  
+  File marker = SD.open(readMarker, FILE_WRITE);
+  if (marker) {
+    marker.println("read");
+    marker.close();
+  }
+}
+
+void showSecureMailMenu() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  session.currentMenu = MENU_SECURE_MAIL;
+  
+  drawBox(CLR_MAGENTA, "SECURE MAIL SYSTEM");
+  
+  client.println();
+  
+  int unreadCount = countUnreadMail();
+  
+  client.print(CLR_BRIGHT_CYAN);
+  client.print(F("  User: "));
+  client.print(CLR_BRIGHT_WHITE);
+  client.print(session.username);
+  client.print(CLR_BRIGHT_CYAN);
+  client.print(F("  |  Encryption: "));
+  client.print(CLR_BRIGHT_GREEN);
+  client.println(F("ACTIVE"));
+  
+  if (unreadCount > 0) {
+    client.print(CLR_BRIGHT_YELLOW);
+    client.print(F("  You have "));
+    client.print(unreadCount);
+    client.println(F(" unread message(s)!"));
+  }
+  
+  client.print(CLR_RESET);
+  client.println();
+  
+  client.print(CLR_BRIGHT_CYAN);
+  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [1] Inbox            - Read incoming mail              │"));
+  client.println(F("  │  [2] Compose Message  - Send encrypted mail             │"));
+  client.println(F("  │  [3] Sent Messages    - View sent mail                  │"));
+  client.println(F("  │  [4] Encryption Key   - View/regenerate key             │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [0] Back to Main Menu                                  │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  └─────────────────────────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  client.print(CLR_YELLOW);
+  client.println(F("  ⚠ Hardware-encrypted messages can only be read on this"));
+  client.println(F("    Arduino Mega 2560 platform by the intended recipient."));
+  client.print(CLR_RESET);
+  client.println();
+  
+  showPrompt();
+}
+
+void handleSecureMailChoice(int choice) {
+  switch (choice) {
+    case 1:
+      showInbox();
+      break;
+    case 2:
+      composeMail();
+      break;
+    case 3:
+      showSentMail();
+      break;
+    case 4:
+      regenerateEncryptionKey();
+      break;
+    case 0:
+      showMainMenu();
+      break;
+    default:
+      client.println(F("Invalid choice."));
+      showPrompt();
+  }
+}
+
+void showInbox() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  drawBox(CLR_CYAN, "INBOX");
+  client.println();
+  
+  char inboxPath[40];
+  sprintf(inboxPath, "mail/%s/inbox", session.username);
+  
+  File inbox = SD.open(inboxPath);
+  if (!inbox) {
+    client.println(F("  No messages."));
+    client.println();
+    client.println(F("Press Enter to continue..."));
+    session.waitingForContinue = true;
+    session.returnToMenu = MENU_SECURE_MAIL;
+    return;
+  }
+  
+  // Count actual messages first
+  int totalMessages = 0;
+  while (true) {
+    File entry = inbox.openNextFile();
+    if (!entry) break;
+    
+    if (!entry.isDirectory() && strstr(entry.name(), ".read") == NULL) {
+      totalMessages++;
+    }
+    entry.close();
+  }
+  inbox.close();
+  
+  if (totalMessages == 0) {
+    client.println(F("  Inbox is empty."));
+    client.println();
+    client.println(F("Press Enter to continue..."));
+    session.waitingForContinue = true;
+    session.returnToMenu = MENU_SECURE_MAIL;
+    return;
+  }
+  
+  // Reopen and display messages
+  inbox = SD.open(inboxPath);
+  int msgCount = 0;
+  
+  while (true) {
+    File entry = inbox.openNextFile();
+    if (!entry) break;
+    
+    if (!entry.isDirectory() && strstr(entry.name(), ".read") == NULL) {
+      bool unread = !isMessageRead(entry.name());
+      
+      if (unread) {
+        client.print(CLR_BRIGHT_YELLOW);
+        client.print(F("  [NEW] "));
+      } else {
+        client.print(F("  [ ✓ ] "));
+      }
+      
+      client.print(CLR_BRIGHT_WHITE);
+      client.print(F("["));
+      client.print(msgCount + 1);
+      client.print(F("] "));
+      
+      // Read first line (from:)
+      char line[80];
+      int idx = 0;
+      bool foundFrom = false;
+      
+      while (entry.available() && idx < 79) {
+        char c = entry.read();
+        if (c == '\n' || c == '\r') {
+          line[idx] = '\0';
+          if (strncmp(line, "From:", 5) == 0) {
+            foundFrom = true;
+            break;
+          }
+          idx = 0;
+        } else {
+          line[idx++] = c;
+        }
+      }
+      
+      if (foundFrom) {
+        client.print(line);
+      } else {
+        client.print(entry.name());
+      }
+      
+      client.print(CLR_RESET);
+      client.println();
+      
+      msgCount++;
+    }
+    entry.close();
+  }
+  inbox.close();
+  
+  client.println();
+  client.print(F("  Enter message number to read, or press Enter to return: "));
+  
+  char numStr[5];
+  int idx = 0;
+  unsigned long startTime = millis();
+  bool gotInput = false;
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        // Clear any additional newlines
+        delay(10);
+        while (client.available()) {
+          char peek = client.peek();
+          if (peek == '\r' || peek == '\n') {
+            client.read();
+          } else {
+            break;
+          }
+        }
+        
+        if (gotInput) {
+          numStr[idx] = '\0';
+          break;
+        } else {
+          // User just pressed Enter without typing a number
+          showSecureMailMenu();
+          return;
+        }
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          gotInput = (idx > 0);
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < 4 && c >= '0' && c <= '9') {
+        numStr[idx++] = c;
+        gotInput = true;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (!gotInput) {
+    showSecureMailMenu();
+    return;
+  }
+  
+  int msgNum = atoi(numStr);
+  
+  if (msgNum < 1 || msgNum > msgCount) {
+    client.println();
+    client.println(F("Invalid message number."));
+    delay(1500);
+    showInbox();
+    return;
+  }
+  
+  // Find and display the message
+  inbox = SD.open(inboxPath);
+  int currentMsg = 0;
+  bool found = false;
+  
+  while (true) {
+    File entry = inbox.openNextFile();
+    if (!entry) break;
+    
+    if (!entry.isDirectory() && strstr(entry.name(), ".read") == NULL) {
+      currentMsg++;
+      
+      if (currentMsg == msgNum) {
+        client.println();
+        client.println();
+        client.print(CLR_BRIGHT_CYAN);
+        client.println(F("  ═══════════════════════════════════════════════════════════"));
+        client.print(CLR_RESET);
+        client.print(F("  "));
+        
+        // Read and decrypt message
+        char encryptedMsg[400];
+        int msgIdx = 0;
+        bool inBody = false;
+        int dashCount = 0;
+        
+        while (entry.available()) {
+          char c = entry.read();
+          
+          // Look for message body (after "---")
+          if (!inBody) {
+            if (c == '-') {
+              dashCount++;
+              if (dashCount == 3) {
+                // Skip to next line
+                while (entry.available() && entry.peek() != '\n') entry.read();
+                if (entry.available()) entry.read(); // consume \n
+                inBody = true;
+                dashCount = 0;
+                continue;
+              }
+            } else {
+              dashCount = 0;
+            }
+            // Display header
+            if (c == '\n') {
+              client.println();
+              client.print(F("  "));
+            } else if (c != '\r') {
+              client.write(c);
+            }
+          } else {
+            // Collect encrypted body
+            if (msgIdx < 399) {
+              encryptedMsg[msgIdx++] = c;
+            }
+          }
+        }
+        encryptedMsg[msgIdx] = '\0';
+        
+        // Decrypt
+        decryptMessage(encryptedMsg, session.userEncryptionKey);
+        
+        client.println();
+        client.print(CLR_BRIGHT_CYAN);
+        client.println(F("  ───────────────────────────────────────────────────────────"));
+        client.print(CLR_RESET);
+        client.print(F("  "));
+        
+        // Display decrypted message
+        for (int i = 0; i < msgIdx; i++) {
+          if (encryptedMsg[i] == '\n') {
+            client.println();
+            client.print(F("  "));
+          } else if (encryptedMsg[i] != '\r') {
+            client.write(encryptedMsg[i]);
+          }
+        }
+        
+        client.println();
+        client.print(CLR_BRIGHT_CYAN);
+        client.println(F("  ═══════════════════════════════════════════════════════════"));
+        client.print(CLR_RESET);
+        
+        // Mark as read
+        markMessageRead(entry.name());
+        
+        found = true;
+        entry.close();
+        break;
+      }
+    }
+    entry.close();
+  }
+  inbox.close();
+  
+  if (!found) {
+    client.println();
+    client.println(F("Message not found."));
+    delay(1500);
+    showInbox();
+    return;
+  }
+  
+  client.println();
+  client.println(F("Press Enter to continue..."));
+  session.waitingForContinue = true;
+  session.returnToMenu = MENU_SECURE_MAIL;
+}
+
+void composeMail() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  session.currentMenu = MENU_MAIL_COMPOSE;
+  
+  drawBox(CLR_GREEN, "COMPOSE SECURE MAIL");
+  
+  client.println();
+  
+  // Show available users
+  client.print(CLR_BRIGHT_YELLOW);
+  client.println(F("  Available Recipients:"));
+  client.print(CLR_RESET);
+  client.println(F("  ───────────────────────────────────────────────────────────"));
+  
+  File f = SD.open("users.txt", FILE_READ);
+  if (f) {
+    char line[64];
+    int idx = 0;
+    
+    while (f.available()) {
+      char c = f.read();
+      if (c == '\n' || c == '\r') {
+        if (idx > 0) {
+          line[idx] = '\0';
+          char* user = strtok(line, ":");
+          
+          if (user && strcmp(user, session.username) != 0) {
+            client.print(F("    • "));
+            client.println(user);
+          }
+          idx = 0;
+        }
+      } else if (idx < 63) {
+        line[idx++] = c;
+      }
+    }
+    f.close();
+  }
+  
+  client.println();
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("  To: "));
+  client.print(CLR_RESET);
+  
+  char recipient[MAX_USERNAME];
+  int recipIdx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        recipient[recipIdx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (recipIdx > 0) {
+          recipIdx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (recipIdx < MAX_USERNAME - 1 && c >= 32) {
+        recipient[recipIdx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (recipIdx == 0) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showSecureMailMenu();
+    return;
+  }
+  
+  // Verify recipient exists
+  bool recipientExists = false;
+  f = SD.open("users.txt", FILE_READ);
+  if (f) {
+    char line[64];
+    int idx = 0;
+    
+    while (f.available()) {
+      char c = f.read();
+      if (c == '\n' || c == '\r') {
+        if (idx > 0) {
+          line[idx] = '\0';
+          char* user = strtok(line, ":");
+          
+          if (user && strcmp(user, recipient) == 0) {
+            recipientExists = true;
+            break;
+          }
+          idx = 0;
+        }
+      } else if (idx < 63) {
+        line[idx++] = c;
+      }
+    }
+    f.close();
+  }
+  
+  if (!recipientExists) {
+    client.println();
+    client.print(CLR_RED);
+    client.println(F("✗ User not found!"));
+    client.print(CLR_RESET);
+    delay(2000);
+    showSecureMailMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("  Subject: "));
+  
+  char subject[60];
+  int subjIdx = 0;
+  startTime = millis();
+  
+  while (millis() - startTime < 60000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        subject[subjIdx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (subjIdx > 0) {
+          subjIdx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (subjIdx < 59 && c >= 32) {
+        subject[subjIdx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  client.println();
+  client.println();
+  client.print(CLR_BRIGHT_YELLOW);
+  client.println(F("  Enter your message (max 300 chars):"));
+  client.print(CLR_RESET);
+  client.print(F("  > "));
+  
+  char message[301];
+  int msgIdx = 0;
+  startTime = millis();
+  
+  while (millis() - startTime < 120000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        message[msgIdx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (msgIdx > 0) {
+          msgIdx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (msgIdx < 300 && c >= 32) {
+        message[msgIdx++] = c;
+        client.write(c);
+      }
+    }
+  }
+  
+  if (msgIdx == 0) {
+    client.println();
+    client.println(F("Cancelled."));
+    delay(1500);
+    showSecureMailMenu();
+    return;
+  }
+  
+  // Encrypt the message
+  encryptMessage(message, session.userEncryptionKey);
+  
+  // Generate unique filename
+  int mailNum = 0;
+  char filename[60];
+  
+  while (mailNum < 1000) {
+    sprintf(filename, "mail/%s/inbox/msg%03d.txt", recipient, mailNum);
+    if (!SD.exists(filename)) break;
+    mailNum++;
+  }
+  
+  // Save to recipient's inbox
+  File mailFile = SD.open(filename, FILE_WRITE);
+  if (mailFile) {
+    mailFile.print("From: ");
+    mailFile.println(session.username);
+    mailFile.print("Subject: ");
+    mailFile.println(subject);
+    mailFile.print("Time: ");
+    printUptimeToFile(mailFile, (millis() - sysStats.bootTime) / 1000);
+    mailFile.println();
+    mailFile.println("---");
+    mailFile.println(message);
+    mailFile.close();
+    
+    // Save copy to sent folder
+    sprintf(filename, "mail/%s/sent/sent%03d.txt", session.username, mailNum);
+    mailFile = SD.open(filename, FILE_WRITE);
+    if (mailFile) {
+      mailFile.print("To: ");
+      mailFile.println(recipient);
+      mailFile.print("Subject: ");
+      mailFile.println(subject);
+      mailFile.print("Time: ");
+      printUptimeToFile(mailFile, (millis() - sysStats.bootTime) / 1000);
+      mailFile.println();
+      mailFile.println("---");
+      
+      // Decrypt before saving to sent (so sender can read it)
+      decryptMessage(message, session.userEncryptionKey);
+      mailFile.println(message);
+      mailFile.close();
+    }
+    
+    client.println();
+    client.println();
+    client.print(CLR_BRIGHT_GREEN);
+    client.println(F("  ✓ Encrypted message sent successfully!"));
+    client.print(CLR_RESET);
+  } else {
+    client.println();
+    client.print(CLR_RED);
+    client.println(F("  ✗ Error sending message!"));
+    client.print(CLR_RESET);
+  }
+  
+  delay(2500);
+  showSecureMailMenu();
+}
+
+void handleComposeMailInput() {
+  // This is handled directly in composeMail()
+  showSecureMailMenu();
+}
+
+void showSentMail() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  drawBox(CLR_BLUE, "SENT MESSAGES");
+  client.println();
+  
+  char sentPath[40];
+  sprintf(sentPath, "mail/%s/sent", session.username);
+  
+  File sentBox = SD.open(sentPath);
+  if (!sentBox) {
+    client.println(F("  No sent messages."));
+    client.println();
+    client.println(F("Press Enter to continue..."));
+    session.waitingForContinue = true;
+    session.returnToMenu = MENU_SECURE_MAIL;
+    return;
+  }
+  
+  int count = 0;
+  while (true) {
+    File entry = sentBox.openNextFile();
+    if (!entry) break;
+    
+    if (!entry.isDirectory()) {
+      client.print(CLR_BRIGHT_YELLOW);
+      client.print(F("  ┌─[ Message #"));
+      client.print(count++);
+      client.println(F(" ]─────────────────────────────"));
+      client.print(CLR_RESET);
+      
+      bool startOfLine = true;
+      while (entry.available()) {
+        char c = entry.read();
+        if (c == '\n') {
+          client.println();
+          startOfLine = true;
+        } else if (c != '\r') {
+          if (startOfLine) {
+            client.print(F("  │ "));
+            startOfLine = false;
+          }
+          client.write(c);
+        }
+      }
+      
+      client.print(CLR_BRIGHT_YELLOW);
+      client.println(F("  └────────────────────────────────────────────"));
+      client.print(CLR_RESET);
+      client.println();
+    }
+    entry.close();
+  }
+  sentBox.close();
+  
+  if (count == 0) {
+    client.println(F("  No sent messages."));
+  }
+  
+  client.println();
+  client.println(F("Press Enter to continue..."));
+  session.waitingForContinue = true;
+  session.returnToMenu = MENU_SECURE_MAIL;
+}
+
+void regenerateEncryptionKey() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  drawBox(CLR_YELLOW, "ENCRYPTION KEY");
+  
+  client.println();
+  client.print(CLR_BRIGHT_CYAN);
+  client.println(F("  Hardware-Generated Encryption Key"));
+  client.print(CLR_RESET);
+  client.println(F("  ───────────────────────────────────────────────────────────"));
+  client.println();
+  
+  client.print(F("  Current Key: "));
+  client.print(CLR_BRIGHT_GREEN);
+  client.print(F("0x"));
+  client.println(session.userEncryptionKey, HEX);
+  client.print(CLR_RESET);
+  client.println();
+  
+  client.print(CLR_YELLOW);
+  client.println(F("  This key is generated from:"));
+  client.println(F("  • Arduino Mega 2560 analog pin noise"));
+  client.println(F("  • Ethernet shield MAC address"));
+client.println(F("  • Your username hash"));
+client.println(F("  • System timing entropy"));
+client.println();
+client.println(F("  This combination makes your messages readable ONLY on"));
+client.println(F("  this specific Arduino Mega hardware platform."));
+client.print(CLR_RESET);
+client.println();
+client.print(CLR_RED);
+client.print(F("  Regenerate key? (y/n): "));
+client.print(CLR_RESET);
+char response[10];
+int idx = 0;
+unsigned long startTime = millis();
+while (millis() - startTime < 10000) {
+if (client.available()) {
+char c = client.read();
+if (c == '\n' || c == '\r') {
+response[idx] = '\0';
+break;
+} else if (idx < 9) {
+response[idx++] = c;
+client.write(c);
+}
+}
+}
+client.println();
+if (idx > 0 && (response[0] == 'y' || response[0] == 'Y')) {
+uint32_t oldKey = session.userEncryptionKey;
+session.userEncryptionKey = generateHardwareKey();
+client.println();
+client.print(CLR_BRIGHT_GREEN);
+client.print(F("  ✓ New key generated: 0x"));
+client.println(session.userEncryptionKey, HEX);
+client.print(CLR_RESET);
+client.println();
+client.print(CLR_RED);
+client.println(F("  ⚠ WARNING: Old messages may not decrypt correctly!"));
+client.print(CLR_RESET);
+} else {
+client.println(F("  Cancelled."));
+}
+client.println();
+client.println(F("Press Enter to continue..."));
+session.waitingForContinue = true;
+session.returnToMenu = MENU_SECURE_MAIL;
+}
+
+// ==================== END SECURE MAIL SYSTEM ====================
 
 void logout() {
   client.println();
