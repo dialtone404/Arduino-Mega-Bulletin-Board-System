@@ -27,7 +27,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 ![Main Menu](images/Main_Menu2.PNG)
 
-**Weather Conditions / Temperature Data**
+**Weather Station Temperature Data**
 
 ![Weather Conditions](images/Temperature_Data.PNG)
 
@@ -40,13 +40,8 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 ![Message Viewer](images/Encryption_Mail.PNG) 
 
 # Arduino Mega 2560 OS
-
-**Enhanced BBS-Style System v3.0**
-
 ---
-
 ## 🚀 Getting Started
-
 1. Flash the ARDUINO_MEGA_BBS.ino sketch to your **Arduino Mega 2560**
 2. Insert SD card into the Ethernet Shield
 3. Connect Ethernet cable
@@ -58,10 +53,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
    * Port: **23**
    * Hostname: (Enter the IP Address you see in Serial Monitor)
 7. Log in and explore
-
-
 ---
-
 ## 📟 Features
 
 * **Multi-screen terminal UI (BBS style)**
