@@ -60,9 +60,133 @@ enum MenuState {
   MENU_HA_SETUP,
   MENU_HA_MANAGE_LIGHTS,
   MENU_HA_MANAGE_SENSORS,
-  MENU_SECURE_MAIL,        // ADD THIS
-  MENU_MAIL_COMPOSE        // ADD THIS
+  MENU_SECURE_MAIL,
+  MENU_MAIL_COMPOSE,
+  MENU_THEME_SELECTOR      // ADD THIS LINE
 };
+// Theme definitions
+enum ThemeID {
+  THEME_DEFAULT,      // Original green/cyan theme
+  THEME_DOS,          // Classic DOS green on black
+  THEME_AMBER,        // Amber monitor
+  THEME_IBM,          // IBM blue screen
+  THEME_C64,          // Commodore 64
+  THEME_MATRIX,       // Matrix/Hacker green
+  THEME_WINDOWS       // Windows 95 gray/blue
+};
+
+struct Theme {
+  const char* name;
+  const char* primary;      // Main text color
+  const char* secondary;    // Secondary text color
+  const char* accent;       // Accent/highlight color
+  const char* success;      // Success messages
+  const char* error;        // Error messages
+  const char* warning;      // Warning messages
+  const char* prompt;       // Prompt color
+  const char* title;        // Title/header color
+};
+
+// Theme definitions
+const Theme themes[] = {
+  // THEME_DEFAULT - Original colorful theme
+  {
+    "Default (Colorful)",
+    "\033[97m",   // primary: bright white
+    "\033[96m",   // secondary: bright cyan
+    "\033[93m",   // accent: bright yellow
+    "\033[92m",   // success: bright green
+    "\033[91m",   // error: bright red
+    "\033[93m",   // warning: bright yellow
+    "\033[92m",   // prompt: bright green
+    "\033[97m"    // title: bright white
+  },
+  // THEME_DOS - Classic DOS green
+  {
+    "Classic DOS",
+    "\033[92m",   // primary: bright green
+    "\033[32m",   // secondary: green
+    "\033[97m",   // accent: bright white
+    "\033[92m",   // success: bright green
+    "\033[91m",   // error: bright red
+    "\033[93m",   // warning: bright yellow
+    "\033[92m",   // prompt: bright green
+    "\033[97m"    // title: bright white
+  },
+  // THEME_AMBER - Amber monitor
+  {
+    "Amber Monitor",
+    "\033[33m",   // primary: yellow (amber)
+    "\033[93m",   // secondary: bright yellow
+    "\033[97m",   // accent: bright white
+    "\033[93m",   // success: bright yellow
+    "\033[91m",   // error: bright red
+    "\033[33m",   // warning: yellow
+    "\033[93m",   // prompt: bright yellow
+    "\033[97m"    // title: bright white
+  },
+  // THEME_IBM - IBM Blue Screen
+  {
+    "IBM Blue Screen",
+    "\033[97m",   // primary: bright white
+    "\033[96m",   // secondary: bright cyan
+    "\033[93m",   // accent: bright yellow
+    "\033[97m",   // success: bright white
+    "\033[91m",   // error: bright red
+    "\033[93m",   // warning: bright yellow
+    "\033[96m",   // prompt: bright cyan
+    "\033[97m"    // title: bright white
+  },
+  // THEME_C64 - Commodore 64
+  {
+    "Commodore 64",
+    "\033[96m",   // primary: bright cyan (light blue)
+    "\033[36m",   // secondary: cyan
+    "\033[95m",   // accent: bright magenta (purple)
+    "\033[96m",   // success: bright cyan
+    "\033[91m",   // error: bright red
+    "\033[95m",   // warning: bright magenta
+    "\033[96m",   // prompt: bright cyan
+    "\033[97m"    // title: bright white
+  },
+  // THEME_MATRIX - Matrix/Hacker
+  {
+    "Matrix/Hacker",
+    "\033[92m",   // primary: bright green
+    "\033[32m",   // secondary: green
+    "\033[97m",   // accent: bright white
+    "\033[92m",   // success: bright green
+    "\033[91m",   // error: bright red
+    "\033[92m",   // warning: bright green
+    "\033[92m",   // prompt: bright green
+    "\033[92m"    // title: bright green
+  },
+  // THEME_WINDOWS - Windows 95
+  {
+    "Windows 95",
+    "\033[37m",   // primary: white (gray)
+    "\033[97m",   // secondary: bright white
+    "\033[34m",   // accent: blue
+    "\033[92m",   // success: bright green
+    "\033[91m",   // error: bright red
+    "\033[93m",   // warning: bright yellow
+    "\033[34m",   // prompt: blue
+    "\033[97m"    // title: bright white
+  }
+};
+
+// Current theme (default to 0)
+int currentTheme = 0;
+
+// Theme-aware color getters - these return colors based on current theme
+#define GET_PRIMARY()   themes[currentTheme].primary
+#define GET_SECONDARY() themes[currentTheme].secondary
+#define GET_ACCENT()    themes[currentTheme].accent
+#define GET_SUCCESS()   themes[currentTheme].success
+#define GET_ERROR()     themes[currentTheme].error
+#define GET_WARNING()   themes[currentTheme].warning
+#define GET_PROMPT()    themes[currentTheme].prompt
+#define GET_TITLE()     themes[currentTheme].title
 
 // STEP 1: Update the Session struct (add new variable)
 struct Session {
@@ -117,17 +241,6 @@ struct SystemStats {
 
 // ANSI Color Codes
 const char* CLR_RESET = "\033[0m";
-const char* CLR_GREEN = "\033[32m";
-const char* CLR_CYAN = "\033[36m";
-const char* CLR_YELLOW = "\033[33m";
-const char* CLR_RED = "\033[31m";
-const char* CLR_BLUE = "\033[34m";
-const char* CLR_MAGENTA = "\033[35m";
-const char* CLR_WHITE = "\033[37m";
-const char* CLR_BRIGHT_GREEN = "\033[92m";
-const char* CLR_BRIGHT_CYAN = "\033[96m";
-const char* CLR_BRIGHT_YELLOW = "\033[93m";
-const char* CLR_BRIGHT_WHITE = "\033[97m";
 
 // Function declarations
 void showMainMenu();
@@ -154,6 +267,14 @@ int countUnreadMail();
 void markMessageRead(const char* filename);
 bool isMessageRead(const char* filename);
 void regenerateEncryptionKey();
+void changePassword();
+void changeUsername(); // optional
+void showThemeMenu();
+void handleThemeChoice(int choice);
+void applyTheme(int themeId);
+void loadTheme();
+void saveTheme();
+void previewTheme(int themeId);
 
 void setup() {
   Serial.begin(9600);
@@ -206,6 +327,8 @@ void setup() {
   // Load HA configuration
   loadHAConfig();
   
+  loadTheme();
+
   // Create default news
   if (!SD.exists("news/news.txt")) {
     File f = SD.open("news/news.txt", FILE_WRITE);
@@ -358,7 +481,7 @@ void loop() {
             }
           } else {
             // Just re-show the prompt, don't process as a choice
-            showPrompt();
+           
           }
         }
       }
@@ -372,7 +495,7 @@ void loop() {
 
 void showWelcomeBanner() {
   client.print(F("\033[3J\033[2J\033[H"));
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣄⣠⣀⡀⣀⣠⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀        "));
   client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣄⢠⣠⣼⣿⣿⣿⣟⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⢠⣤⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⢦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀      "));
   client.println(F("   ⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣟⣾⣿⣽⣿⣿⣅⠈⠉⠻⣿⣿⣿⣿⣿⡿⠇⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⢀⡶⠒⢉⡀⢠⣤⣶⣶⣿⣷⣆⣀⡀⠀⢲⣖⠒⠀⠀⠀⠀⠀⠀⠀    "));
@@ -405,17 +528,17 @@ void showWelcomeBanner() {
   client.print(CLR_RESET);
   client.println();
   
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.print(F("System IP: "));
-  client.print(CLR_WHITE);
+  client.print(GET_PRIMARY());
   client.print(Ethernet.localIP());
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.print(F("  |  Uptime: "));
-  client.print(CLR_WHITE);
+  client.print(GET_PRIMARY());
   printUptime((millis() - sysStats.bootTime) / 1000);
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.print(F("  |  Connections: "));
-  client.print(CLR_WHITE);
+  client.print(GET_PRIMARY());
   client.println(sysStats.totalConnections);
   client.print(CLR_RESET);
   client.println();
@@ -437,7 +560,7 @@ void printUptime(unsigned long seconds) {
 }
 
 void showLoginPrompt() {
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("Username: "));
   client.print(CLR_RESET);
 }
@@ -486,7 +609,7 @@ void handleLogin() {
     strncpy(tempUser, cmdBuffer, MAX_USERNAME - 1);
     tempUser[MAX_USERNAME - 1] = '\0';
     usernameEntered = true;
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.print(F("Password: "));
     client.print(CLR_RESET);
   } else {
@@ -494,7 +617,7 @@ void handleLogin() {
       session.loggedIn = true;
       strncpy(session.username, tempUser, MAX_USERNAME - 1);
       client.println();
-      client.print(CLR_BRIGHT_GREEN);
+      client.print(GET_SUCCESS());
       client.print(F("\r\n✓ Welcome, "));
       client.print(session.username);
       client.println(F("!"));
@@ -503,7 +626,7 @@ void handleLogin() {
       showMainMenu();
     } else {
       client.println();
-      client.print(CLR_RED);
+      client.print(GET_ERROR());
       client.println(F("\r\n✗ Login failed!"));
       client.print(CLR_RESET);
       usernameEntered = false;
@@ -566,26 +689,26 @@ void showMainMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_MAIN;
   
-  drawBox(CLR_RED, "MAIN MENU");
+  drawBox(GET_ERROR(), "MAIN MENU");
   
   client.println();
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.print(F("  User: "));
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(session.username);
   if (session.isAdmin) {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.print(F(" [ADMIN]"));
   }
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.print(F("  |  Uptime: "));
-  client.print(CLR_WHITE);
+  client.print(GET_PRIMARY());
   printUptime((millis() - sysStats.bootTime) / 1000);
   client.println();
   client.print(CLR_RESET);
   client.println();
   
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Message Board    - Post and read messages          │"));
@@ -601,26 +724,26 @@ void showMainMenu() {
    // ADD THESE LINES:
   int unreadCount = countUnreadMail();
   if (unreadCount > 0) {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.print(F("  │  [M] Secure Mail      - Private messages ("));
     client.print(unreadCount);
     client.print(F(" new)"));
     int spaces = 14 - String(unreadCount).length();
     for(int i = 0; i < spaces; i++) client.print(F(" "));
     client.println(F("│"));
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
   } else {
     client.println(F("  │  [M] Secure Mail      - Private messages               │"));
   }
   // END ADD
   if (haConfig.configured) {
-    client.print(CLR_BRIGHT_CYAN);
+    client.print(GET_SECONDARY());
     client.println(F("  │  [H] Home Control     - Control Home Assistant          │"));
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
   } else {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  │  [H] Home Control     - Setup required                  │"));
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
   }
   
   client.println(F("  │                                                         │"));
@@ -714,7 +837,7 @@ void handleMainMenuChoice(int choice) {
       logout();
       break;
     default:
-      client.print(CLR_RED);
+      client.print(GET_ERROR());
       client.println(F("Invalid choice."));
       client.print(CLR_RESET);
       showPrompt();
@@ -725,10 +848,10 @@ void showEditorMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_EDITOR_MENU;
   
-  drawBox(CLR_GREEN, "TEXT EDITOR");
+  drawBox(GET_PRIMARY(), "TEXT EDITOR");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Create New Note  - Start a new document            │"));
@@ -828,11 +951,11 @@ void saveHAConfig() {
     f.println(haConfig.token);
     f.close();
     
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("✓ Configuration saved!"));
     client.print(CLR_RESET);
   } else {
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ Error saving configuration!"));
     client.print(CLR_RESET);
   }
@@ -966,12 +1089,12 @@ void showHASetupMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HA_SETUP;
   
-  drawBox(CLR_MAGENTA, "HOME ASSISTANT SETUP");
+  drawBox(GET_ACCENT(), "HOME ASSISTANT SETUP");
   
   client.println();
   
   if (haConfig.configured) {
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("  ✓ Home Assistant is configured"));
     client.print(CLR_RESET);
     client.println();
@@ -991,13 +1114,13 @@ void showHASetupMenu() {
     }
     client.println();
   } else {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  ⚠ Home Assistant not configured"));
     client.print(CLR_RESET);
   }
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Configure Server - Set HA IP and port              │"));
@@ -1062,7 +1185,7 @@ void handleHASetupChoice(int choice) {
 
 void configureHAServer() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("Enter Home Assistant IP (e.g., 192.168.1.100): "));
   client.print(CLR_RESET);
   
@@ -1133,7 +1256,7 @@ void configureHAServer() {
   haConfig.port = port;
   
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("✓ Server set to: "));
   client.print(haConfig.server);
   client.print(F(":"));
@@ -1152,7 +1275,7 @@ void configureHAServer() {
 
 void configureHAToken() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("Enter your Home Assistant Long-Lived Access Token:"));
   client.println(F("(Go to Profile > Security > Long-Lived Access Tokens)"));
   client.print(CLR_RESET);
@@ -1195,7 +1318,7 @@ void configureHAToken() {
   haConfig.token[255] = '\0';
   
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("✓ Token saved!"));
   client.print(CLR_RESET);
   
@@ -1215,7 +1338,7 @@ void testHAConnection() {
   client.println();
   
   if (!haConfig.configured) {
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ Configuration incomplete!"));
     client.print(CLR_RESET);
     delay(2000);
@@ -1232,7 +1355,7 @@ void testHAConnection() {
   client.println(F("..."));
   
   if (haClient.connect(haConfig.server, haConfig.port)) {
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("✓ Connected!"));
     client.print(CLR_RESET);
     
@@ -1268,17 +1391,17 @@ void testHAConnection() {
     haClient.stop();
     
     if (success) {
-      client.print(CLR_BRIGHT_GREEN);
+      client.print(GET_SUCCESS());
       client.println(F("✓ Home Assistant API responding correctly!"));
       client.print(CLR_RESET);
     } else {
-      client.print(CLR_YELLOW);
+      client.print(GET_WARNING());
       client.println(F("⚠ Connected but API response unclear."));
       client.println(F("  Check your token permissions."));
       client.print(CLR_RESET);
     }
   } else {
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ Connection failed!"));
     client.println(F("  Check IP address and port."));
     client.print(CLR_RESET);
@@ -1292,7 +1415,7 @@ void testHAConnection() {
 
 void resetHAConfig() {
   client.println();
-  client.print(CLR_RED);
+  client.print(GET_ERROR());
   client.print(F("Reset all Home Assistant configuration? (y/n): "));
   client.print(CLR_RESET);
   
@@ -1325,7 +1448,7 @@ void resetHAConfig() {
     haConfig.token[0] = '\0';
     haConfig.configured = false;
     
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("✓ Configuration reset!"));
     client.print(CLR_RESET);
   } else {
@@ -1340,14 +1463,14 @@ void showManageLightsMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HA_MANAGE_LIGHTS;
   
-  drawBox(CLR_CYAN, "MANAGE LIGHTS");
+  drawBox(GET_ACCENT(), "MANAGE LIGHTS");
   
   client.println();
   
   int lightCount = countLights();
   
   if (lightCount > 0) {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  Configured Lights:"));
     client.print(CLR_RESET);
     client.println(F("  ───────────────────────────────────────────────────────────"));
@@ -1366,13 +1489,13 @@ void showManageLightsMenu() {
     }
     client.println();
   } else {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  No lights configured yet."));
     client.print(CLR_RESET);
     client.println();
   }
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Add Light        - Add a new light entity          │"));
@@ -1410,7 +1533,7 @@ void handleManageLightsChoice(int choice) {
 
 void addLightInteractive() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("Enter entity ID (e.g., light.living_room): "));
   client.print(CLR_RESET);
   
@@ -1514,7 +1637,7 @@ void addLightInteractive() {
   addLight(entityId, displayName);
   
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("✓ Light added: "));
   client.print(displayName);
   client.print(F(" ("));
@@ -1587,7 +1710,7 @@ HALight light;
 if (getLight(num - 1, light)) {
 deleteLight(num - 1);
 client.println();
-client.print(CLR_BRIGHT_GREEN);
+client.print(GET_SUCCESS());
 client.print(F("✓ Removed: "));
 client.println(light.displayName);
 client.print(CLR_RESET);
@@ -1601,7 +1724,7 @@ showManageLightsMenu();
 }
 void listAllLights() {
 client.print(F("\033[3J\033[2J\033[H"));
-drawBox(CLR_CYAN, "ALL CONFIGURED LIGHTS");
+drawBox(GET_ACCENT(), "ALL CONFIGURED LIGHTS");
 client.println();
 int lightCount = countLights();
 if (lightCount == 0) {
@@ -1610,14 +1733,14 @@ client.println(F("  No lights configured."));
 for (int i = 0; i < lightCount; i++) {
 HALight light;
 if (getLight(i, light)) {
-client.print(CLR_BRIGHT_YELLOW);
+client.print(GET_WARNING());
 client.print(F("  ┌─[ "));
 client.print(light.displayName);
 client.println(F(" ]"));
 client.print(CLR_RESET);
 client.print(F("  │ Entity ID: "));
 client.println(light.entityId);
-client.print(CLR_BRIGHT_YELLOW);
+client.print(GET_WARNING());
 client.println(F("  └────────────────────────────────────────────"));
 client.print(CLR_RESET);
 client.println();
@@ -1764,14 +1887,14 @@ void showManageSensorsMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HA_MANAGE_SENSORS;
   
-  drawBox(CLR_GREEN, "MANAGE SENSORS");
+  drawBox(GET_PRIMARY(), "MANAGE SENSORS");
   
   client.println();
   
   int sensorCount = countSensors();
   
   if (sensorCount > 0) {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  Configured Sensors:"));
     client.print(CLR_RESET);
     client.println(F("  ───────────────────────────────────────────────────────────"));
@@ -1792,13 +1915,13 @@ void showManageSensorsMenu() {
     }
     client.println();
   } else {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  No sensors configured yet."));
     client.print(CLR_RESET);
     client.println();
   }
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Add Sensor       - Add a new sensor entity         │"));
@@ -1836,7 +1959,7 @@ void handleManageSensorsChoice(int choice) {
 
 void addSensorInteractive() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("Enter entity ID (e.g., sensor.temperature): "));
   client.print(CLR_RESET);
   
@@ -1982,7 +2105,7 @@ void addSensorInteractive() {
   addSensor(entityId, displayName, unit);
   
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("✓ Sensor added: "));
   client.print(displayName);
   client.print(F(" ("));
@@ -2060,7 +2183,7 @@ void removeSensorInteractive() {
     if (getSensor(num - 1, sensor)) {
       deleteSensor(num - 1);
       client.println();
-      client.print(CLR_BRIGHT_GREEN);
+      client.print(GET_SUCCESS());
       client.print(F("✓ Removed: "));
       client.println(sensor.displayName);
       client.print(CLR_RESET);
@@ -2076,7 +2199,7 @@ void removeSensorInteractive() {
 
 void listAllSensors() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_GREEN, "ALL CONFIGURED SENSORS");
+  drawBox(GET_PRIMARY(), "ALL CONFIGURED SENSORS");
   client.println();
   
   int sensorCount = countSensors();
@@ -2087,7 +2210,7 @@ void listAllSensors() {
     for (int i = 0; i < sensorCount; i++) {
       HASensor sensor;
       if (getSensor(i, sensor)) {
-        client.print(CLR_BRIGHT_YELLOW);
+        client.print(GET_WARNING());
         client.print(F("  ┌─[ "));
         client.print(sensor.displayName);
         client.println(F(" ]"));
@@ -2100,7 +2223,7 @@ void listAllSensors() {
         } else {
           client.println(F("(none)"));
         }
-        client.print(CLR_BRIGHT_YELLOW);
+        client.print(GET_WARNING());
         client.println(F("  └────────────────────────────────────────────"));
         client.print(CLR_RESET);
         client.println();
@@ -2172,7 +2295,7 @@ String getSensorValue(const char* entityId) {
 
 void createNewNote() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("Enter filename (e.g., mynote.txt): "));
   client.print(CLR_RESET);
   
@@ -2217,14 +2340,14 @@ void showHomeAssistantMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_HOME_ASSISTANT;
   
-  drawBox(CLR_MAGENTA, "HOME ASSISTANT CONTROL");
+  drawBox(GET_ACCENT(), "HOME ASSISTANT CONTROL");
   
   client.println();
   
   int lightCount = countLights();
   
   if (lightCount == 0) {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  No lights configured!"));
     client.println(F("  Go to Setup > Manage Lights to add lights."));
     client.print(CLR_RESET);
@@ -2236,7 +2359,7 @@ void showHomeAssistantMenu() {
     return;
   }
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   
@@ -2344,18 +2467,18 @@ void toggleLight(const char* entityId, const char* displayName) {
     haClient.stop();
     
     if (success) {
-      client.print(CLR_BRIGHT_GREEN);
+      client.print(GET_SUCCESS());
       client.print(F("✓ "));
       client.print(displayName);
       client.println(F(" toggled successfully!"));
       client.print(CLR_RESET);
     } else {
-      client.print(CLR_RED);
+      client.print(GET_ERROR());
       client.println(F("✗ Failed to toggle light"));
       client.print(CLR_RESET);
     }
   } else {
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ Cannot connect to Home Assistant"));
     client.print(CLR_RESET);
   }
@@ -2410,17 +2533,17 @@ void toggleAllLights() {
         haClient.stop();
         
         if (success) {
-          client.print(CLR_BRIGHT_GREEN);
+          client.print(GET_SUCCESS());
           client.println(F("✓"));
           client.print(CLR_RESET);
           successCount++;
         } else {
-          client.print(CLR_RED);
+          client.print(GET_ERROR());
           client.println(F("✗"));
           client.print(CLR_RESET);
         }
       } else {
-        client.print(CLR_RED);
+        client.print(GET_ERROR());
         client.println(F("✗"));
         client.print(CLR_RESET);
       }
@@ -2430,7 +2553,7 @@ void toggleAllLights() {
   }
   
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("✓ Toggled "));
   client.print(successCount);
   client.print(F(" of "));
@@ -2444,10 +2567,10 @@ void toggleAllLights() {
 
 void checkAllLightsStatus() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_CYAN, "LIGHT STATUS");
+  drawBox(GET_ACCENT(), "LIGHT STATUS");
   client.println();
   
-  client.print(CLR_BRIGHT_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  Fetching status from Home Assistant..."));
   client.print(CLR_RESET);
   client.println();
@@ -2527,11 +2650,11 @@ void getLightStatus(const char* entityId, const char* displayName) {
           String state = response.substring(quoteStart + 1, quoteEnd);
           
           if (state == "on") {
-            client.print(CLR_BRIGHT_GREEN);
+            client.print(GET_SUCCESS());
             client.println(F("ON"));
             client.print(CLR_RESET);
           } else if (state == "off") {
-            client.print(CLR_YELLOW);
+            client.print(GET_WARNING());
             client.println(F("OFF"));
             client.print(CLR_RESET);
           } else {
@@ -2543,12 +2666,12 @@ void getLightStatus(const char* entityId, const char* displayName) {
       }
     }
     
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("Unknown"));
     client.print(CLR_RESET);
     
   } else {
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("Connection failed"));
     client.print(CLR_RESET);
   }
@@ -2573,6 +2696,9 @@ void handleMenuInput() {
       break;
     case MENU_SETTINGS:
       handleSettingsChoice(choice);
+      break;
+    case MENU_THEME_SELECTOR:  // ADD THIS CASE
+      handleThemeChoice(choice);
       break;
     case MENU_NEWS:
       if (choice == 0) showMainMenu();
@@ -2601,17 +2727,15 @@ void handleMenuInput() {
     case MENU_HA_MANAGE_LIGHTS:
       handleManageLightsChoice(choice);
       break;
-	 case MENU_HA_MANAGE_SENSORS:
+    case MENU_HA_MANAGE_SENSORS:
       handleManageSensorsChoice(choice);
       break;
-       // ADD THESE:
     case MENU_SECURE_MAIL:
       handleSecureMailChoice(choice);
       break;
     case MENU_MAIL_COMPOSE:
       handleComposeMailInput();
       return;
-    // END ADD
     default:
       showMainMenu();
   }
@@ -2717,7 +2841,7 @@ void loadFileToEditor() {
 // STEP 4: Update listAllNotes() function
 void listAllNotes() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_GREEN, "ALL NOTES");
+  drawBox(GET_PRIMARY(), "ALL NOTES");
   client.println();
   
   File root = SD.open("notes");
@@ -2754,10 +2878,10 @@ void startTextEditor() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_EDITOR;
   
-  drawBox(CLR_GREEN, "TEXT EDITOR");
+  drawBox(GET_PRIMARY(), "TEXT EDITOR");
   
   client.println();
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.print(F("  Editing: "));
   client.print(session.editorFilename);
   client.print(F("  (Line "));
@@ -2841,12 +2965,12 @@ void saveEditorFile() {
     }
     f.close();
     sysStats.filesCreated++;
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.print(F("✓ Saved: "));
     client.println(fullPath);
     client.print(CLR_RESET);
   } else {
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ Error saving!"));
     client.print(CLR_RESET);
   }
@@ -2856,7 +2980,7 @@ void startCalculator() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_CALCULATOR;
   
-  drawBox(CLR_YELLOW, "CALCULATOR");
+  drawBox(GET_WARNING(), "CALCULATOR");
   
   client.println();
   client.println(F("  Operations: + - * / (spaces required)"));
@@ -2887,7 +3011,7 @@ void handleCalculatorInput() {
   }
   
   if (strcmp(cmdBuffer, "MR") == 0 || strcmp(cmdBuffer, "mr") == 0) {
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.print(F("  Memory = "));
     client.println(session.calcMemory, 2);
     client.print(CLR_RESET);
@@ -2930,7 +3054,7 @@ void handleCalculatorInput() {
     }
     
     if (validOp) {
-      client.print(CLR_BRIGHT_GREEN);
+      client.print(GET_SUCCESS());
       client.print(F("  = "));
       client.println(result, 2);
       client.print(CLR_RESET);
@@ -2972,14 +3096,14 @@ void showWeather() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_WEATHER;
   
-  drawBox(CLR_CYAN, "WEATHER INFORMATION");
+  drawBox(GET_ACCENT(), "WEATHER INFORMATION");
   
   client.println();
   
   int sensorCount = countSensors();
   
   if (!haConfig.configured || sensorCount == 0) {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     if (!haConfig.configured) {
       client.println(F("  ⚠ Home Assistant not configured"));
     } else {
@@ -2998,7 +3122,7 @@ void showWeather() {
     client.println(F("  Wind: 12 mph NW"));
     client.println(F("  Pressure: 30.12 inHg"));
   } else {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("  Fetching sensor data from Home Assistant..."));
     client.print(CLR_RESET);
     client.println(F("  ───────────────────────────────────────────────────────────"));
@@ -3014,7 +3138,7 @@ void showWeather() {
         String value = getSensorValue(sensor.entityId);
         
         if (value.length() > 0) {
-          client.print(CLR_BRIGHT_GREEN);
+          client.print(GET_SUCCESS());
           client.print(value);
           if (strlen(sensor.unit) > 0) {
             client.print(F(" "));
@@ -3022,7 +3146,7 @@ void showWeather() {
           }
           client.print(CLR_RESET);
         } else {
-          client.print(CLR_RED);
+          client.print(GET_ERROR());
           client.print(F("unavailable"));
           client.print(CLR_RESET);
         }
@@ -3044,10 +3168,10 @@ void showStocks() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_STOCKS;
   
-  drawBox(CLR_GREEN, "STOCK MARKET INFORMATION");
+  drawBox(GET_PRIMARY(), "STOCK MARKET INFORMATION");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  Market Summary"));
   client.print(CLR_RESET);
   client.println(F("  ───────────────────────────────────────────────────────────"));
@@ -3063,7 +3187,7 @@ void showStocks() {
   client.println(F("  NASDAQ:  16,745.30  (+1.2%)"));
   client.println(F("  DOW:     42,863.86  (+0.3%)"));
   client.println();
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  Note: Stock data is simulated. Connect to market"));
   client.println(F("  data API for real-time quotes."));
   client.print(CLR_RESET);
@@ -3078,10 +3202,10 @@ void showGamesMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_GAMES;
   
-  drawBox(CLR_MAGENTA, "GAMES");
+  drawBox(GET_ACCENT(), "GAMES");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Number Guessing  - Guess the number (1-100)        │"));
@@ -3123,7 +3247,7 @@ void startGuessGame() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_GAME_GUESS;
   
-  drawBox(CLR_MAGENTA, "NUMBER GUESSING GAME");
+  drawBox(GET_ACCENT(), "NUMBER GUESSING GAME");
   
   randomSeed(millis() + analogRead(A0));
   session.guessNumber = random(1, 101);
@@ -3152,16 +3276,16 @@ void handleGuessGame() {
   if (guess < 1 || guess > 100) {
     client.println(F("Please enter a number between 1 and 100."));
   } else if (guess < session.guessNumber) {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("Too low! Try again."));
     client.print(CLR_RESET);
   } else if (guess > session.guessNumber) {
-    client.print(CLR_YELLOW);
+    client.print(GET_WARNING());
     client.println(F("Too high! Try again."));
     client.print(CLR_RESET);
   } else {
     client.println();
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("🎉 Correct! You guessed it!"));
     client.print(F("Attempts: "));
     client.println(session.guessAttempts);
@@ -3194,7 +3318,7 @@ void saveGameScore(int attempts) {
 // STEP 5: Update showHighScores() function
 void showHighScores() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_MAGENTA, "HIGH SCORES");
+  drawBox(GET_ACCENT(), "HIGH SCORES");
   
   client.println();
   client.println(F("  Number Guessing Game - Best Scores"));
@@ -3248,10 +3372,10 @@ void showUtilitiesMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_UTILITIES;
   
-  drawBox(CLR_BLUE, "UTILITIES");
+  drawBox(GET_SECONDARY(), "UTILITIES");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] System Stats     - View system information         │"));
@@ -3298,10 +3422,10 @@ void handleUtilitiesChoice(int choice) {
 // STEP 6: Update showSystemLog() function
 void showSystemLog() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_BLUE, "SYSTEM LOG");
+  drawBox(GET_SECONDARY(), "SYSTEM LOG");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  Recent Activity:"));
   client.print(CLR_RESET);
   client.println(F("  ───────────────────────────────────────────────────────────"));
@@ -3334,10 +3458,10 @@ void showMessageMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_MESSAGES;
   
-  drawBox(CLR_MAGENTA, "MESSAGE BOARD");
+  drawBox(GET_ACCENT(), "MESSAGE BOARD");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Read Messages    - View all messages               │"));
@@ -3388,7 +3512,7 @@ void showMessageCount() {
   }
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.print(F("Total messages: "));
   client.println(count);
   client.print(CLR_RESET);
@@ -3401,7 +3525,7 @@ void showMessageCount() {
 // STEP 8: Update readMessages() function
 void readMessages() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_MAGENTA, "MESSAGE BOARD");
+  drawBox(GET_ACCENT(), "MESSAGE BOARD");
   client.println();
   
   File root = SD.open("messages");
@@ -3420,7 +3544,7 @@ void readMessages() {
     if (!entry) break;
     
     if (!entry.isDirectory()) {
-      client.print(CLR_BRIGHT_YELLOW);
+      client.print(GET_WARNING());
       client.print(F("  ┌─[ Message #"));
       client.print(count++);
       client.println(F(" ]─────────────────────────────"));
@@ -3439,7 +3563,7 @@ void readMessages() {
         }
       }
       
-      client.print(CLR_BRIGHT_YELLOW);
+      client.print(GET_WARNING());
       client.println(F("  └────────────────────────────────────────────"));
       client.print(CLR_RESET);
       client.println();
@@ -3461,7 +3585,7 @@ void readMessages() {
 
 void postMessage() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("Enter your message (max 200 chars):"));
   client.print(CLR_RESET);
   client.print(F("> "));
@@ -3520,12 +3644,12 @@ void postMessage() {
     sysStats.messagesPosted++;
     
     client.println();
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("✓ Message posted!"));
     client.print(CLR_RESET);
   } else {
     client.println();
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ Error posting message."));
     client.print(CLR_RESET);
   }
@@ -3553,10 +3677,10 @@ void showFileMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_FILES;
   
-  drawBox(CLR_BLUE, "FILE MANAGER");
+  drawBox(GET_SECONDARY(), "FILE MANAGER");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] List All Files   - Browse all directories          │"));
@@ -3692,13 +3816,13 @@ void viewNote() {
 // STEP 10: Update listFiles() function
 void listFiles() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_BLUE, "FILE LISTING");
+  drawBox(GET_SECONDARY(), "FILE LISTING");
   client.println();
   
   const char* dirs[] = {"notes", "messages", "logs", "news"};
   
   for (int i = 0; i < 4; i++) {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.print(F("  ["));
     client.print(dirs[i]);
     client.println(F("]"));
@@ -3738,10 +3862,10 @@ void showStatsMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_STATS;
   
-  drawBox(CLR_MAGENTA, "SYSTEM STATISTICS");
+  drawBox(GET_ACCENT(), "SYSTEM STATISTICS");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─[ SYSTEM INFORMATION ]────────────────────────────────────┐"));
   client.print(CLR_RESET);
   
@@ -3757,7 +3881,7 @@ void showStatsMenu() {
   for (int i = 0; i < 40 - ipLen; i++) client.print(' ');
   client.println(F("│"));
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ├─[ PERFORMANCE ]──────────────────────────────────────────┤"));
   client.print(CLR_RESET);
   
@@ -3774,7 +3898,7 @@ void showStatsMenu() {
   for (int i = 0; i < 33 - ramLen; i++) client.print(' ');
   client.println(F("│"));
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ├─[ STATISTICS ]───────────────────────────────────────────┤"));
   client.print(CLR_RESET);
   
@@ -3802,7 +3926,7 @@ void showStatsMenu() {
   for (int i = 0; i < 41 - cmdLen; i++) client.print(' ');
   client.println(F("│"));
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  └───────────────────────────────────────────────────────────┘"));
   client.print(CLR_RESET);
   
@@ -3831,21 +3955,20 @@ void showSettingsMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_SETTINGS;
   
-  drawBox(CLR_YELLOW, "SETTINGS");
+  const Theme& t = themes[currentTheme];
   
-  client.println();
-  client.print(CLR_BRIGHT_CYAN);
-  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.print(t.accent);
+  client.println(F("  ╔═════════════════════════════════════════════════════════╗"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] User Management  - View/add users (admin)          │"));
   client.println(F("  │  [2] Change Password  - Update your password            │"));
-  client.println(F("  │  [3] About System     - System information              │"));
+  client.println(F("  │  [3] Theme Selector   - Change color scheme             │"));  // ADD THIS
+  client.println(F("  │  [4] About System     - System information              │"));  // UPDATE NUMBER
   client.println(F("  │                                                         │"));
   client.println(F("  │  [0] Back             - Return to previous menu         │"));
   client.println(F("  │                                                         │"));
   client.println(F("  └─────────────────────────────────────────────────────────┘"));
   client.print(CLR_RESET);
-  client.println();
   
   showPrompt();
 }
@@ -3862,11 +3985,13 @@ void handleSettingsChoice(int choice) {
       }
       break;
     case 2:
-      client.println(F("Password change coming soon!"));
-      delay(2000);
-      showSettingsMenu();
+      changePassword();
       break;
     case 3:
+      session.currentMenu = MENU_THEME_SELECTOR;  // SET MENU STATE
+      showThemeMenu();
+      break;
+    case 4:
       showAbout();
       break;
     case 0:
@@ -3881,7 +4006,7 @@ void handleSettingsChoice(int choice) {
 // STEP 11: Update showAbout() function
 void showAbout() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_CYAN, "ABOUT THIS SYSTEM");
+  drawBox(GET_ACCENT(), "ABOUT THIS SYSTEM");
   
   client.println();
   client.println(F("  Arduino Mega Terminal OS v3.0"));
@@ -3910,7 +4035,7 @@ void showAbout() {
 // STEP 12: Update showUserManagement() function
 void showUserManagement() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_RED, "USER MANAGEMENT");
+  drawBox(GET_ERROR(), "USER MANAGEMENT");
   
   client.println();
   client.println(F("  Registered Users:"));
@@ -3933,7 +4058,7 @@ void showUserManagement() {
           client.print(F("    • "));
           client.print(user);
           if (admin && atoi(admin) == 1) {
-            client.print(CLR_BRIGHT_YELLOW);
+            client.print(GET_WARNING());
             client.print(F(" [ADMIN]"));
             client.print(CLR_RESET);
           }
@@ -3956,7 +4081,7 @@ void showUserManagement() {
 // STEP 13: Update showNetworkInfo() function
 void showNetworkInfo() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_BLUE, "NETWORK INFORMATION");
+  drawBox(GET_SECONDARY(), "NETWORK INFORMATION");
   
   client.println();
   client.print(F("  IP Address:      "));
@@ -3989,7 +4114,7 @@ void showNewsReader() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_NEWS;
   
-  drawBox(CLR_CYAN, "NEWS READER");
+  drawBox(GET_ACCENT(), "NEWS READER");
   
   client.println();
   
@@ -4021,10 +4146,10 @@ void startCommandMode() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_COMMAND;
   
-  drawBox(CLR_RED, "COMMAND MODE");
+  drawBox(GET_ERROR(), "COMMAND MODE");
   
   client.println();
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  Advanced command-line interface"));
   client.println(F("  Type 'help' for commands or 'exit' to return"));
   client.print(CLR_RESET);
@@ -4147,16 +4272,16 @@ void catCommand() {
 }
 
 void showCommandPrompt() {
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(session.username);
-  client.print(CLR_CYAN);
+  client.print(GET_ACCENT());
   client.print(F("@ArduinoOS"));
   client.print(CLR_RESET);
   client.print(F(" $ "));
 }
 
 void showPrompt() {
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("Choice"));
   client.print(CLR_RESET);
   client.print(F(" > "));
@@ -4169,7 +4294,7 @@ void drawBox(const char* color, const char* title) {
   client.println(F("╗"));
   
   client.print(F("  ║ "));
-  client.print(CLR_BRIGHT_WHITE);
+  client.print(GET_TITLE());
   client.print(title);
   client.print(color);
   for (int i = 0; i < 57 - strlen(title); i++) client.print(F(" "));
@@ -4271,23 +4396,23 @@ void showSecureMailMenu() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_SECURE_MAIL;
   
-  drawBox(CLR_MAGENTA, "SECURE MAIL SYSTEM");
+  drawBox(GET_ACCENT(), "SECURE MAIL SYSTEM");
   
   client.println();
   
   int unreadCount = countUnreadMail();
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.print(F("  User: "));
-  client.print(CLR_BRIGHT_WHITE);
+  client.print(GET_TITLE());
   client.print(session.username);
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.print(F("  |  Encryption: "));
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("ACTIVE"));
   
   if (unreadCount > 0) {
-    client.print(CLR_BRIGHT_YELLOW);
+    client.print(GET_WARNING());
     client.print(F("  You have "));
     client.print(unreadCount);
     client.println(F(" unread message(s)!"));
@@ -4296,7 +4421,7 @@ void showSecureMailMenu() {
   client.print(CLR_RESET);
   client.println();
   
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
   client.println(F("  │                                                         │"));
   client.println(F("  │  [1] Inbox            - Read incoming mail              │"));
@@ -4310,7 +4435,7 @@ void showSecureMailMenu() {
   client.print(CLR_RESET);
   client.println();
   
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  ⚠ Hardware-encrypted messages can only be read on this"));
   client.println(F("    Arduino Mega 2560 platform by the intended recipient."));
   client.print(CLR_RESET);
@@ -4344,7 +4469,7 @@ void handleSecureMailChoice(int choice) {
 
 void showInbox() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_CYAN, "INBOX");
+  drawBox(GET_ACCENT(), "INBOX");
   client.println();
   
   char inboxPath[40];
@@ -4394,13 +4519,13 @@ void showInbox() {
       bool unread = !isMessageRead(entry.name());
       
       if (unread) {
-        client.print(CLR_BRIGHT_YELLOW);
+        client.print(GET_WARNING());
         client.print(F("  [NEW] "));
       } else {
         client.print(F("  [ ✓ ] "));
       }
       
-      client.print(CLR_BRIGHT_WHITE);
+      client.print(GET_TITLE());
       client.print(F("["));
       client.print(msgCount + 1);
       client.print(F("] "));
@@ -4516,7 +4641,7 @@ void showInbox() {
       if (currentMsg == msgNum) {
         client.println();
         client.println();
-        client.print(CLR_BRIGHT_CYAN);
+        client.print(GET_SECONDARY());
         client.println(F("  ═══════════════════════════════════════════════════════════"));
         client.print(CLR_RESET);
         client.print(F("  "));
@@ -4565,7 +4690,7 @@ void showInbox() {
         decryptMessage(encryptedMsg, session.userEncryptionKey);
         
         client.println();
-        client.print(CLR_BRIGHT_CYAN);
+        client.print(GET_SECONDARY());
         client.println(F("  ───────────────────────────────────────────────────────────"));
         client.print(CLR_RESET);
         client.print(F("  "));
@@ -4581,7 +4706,7 @@ void showInbox() {
         }
         
         client.println();
-        client.print(CLR_BRIGHT_CYAN);
+        client.print(GET_SECONDARY());
         client.println(F("  ═══════════════════════════════════════════════════════════"));
         client.print(CLR_RESET);
         
@@ -4615,12 +4740,12 @@ void composeMail() {
   client.print(F("\033[3J\033[2J\033[H"));
   session.currentMenu = MENU_MAIL_COMPOSE;
   
-  drawBox(CLR_GREEN, "COMPOSE SECURE MAIL");
+  drawBox(GET_PRIMARY(), "COMPOSE SECURE MAIL");
   
   client.println();
   
   // Show available users
-  client.print(CLR_BRIGHT_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  Available Recipients:"));
   client.print(CLR_RESET);
   client.println(F("  ───────────────────────────────────────────────────────────"));
@@ -4651,7 +4776,7 @@ void composeMail() {
   }
   
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("  To: "));
   client.print(CLR_RESET);
   
@@ -4716,7 +4841,7 @@ void composeMail() {
   
   if (!recipientExists) {
     client.println();
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("✗ User not found!"));
     client.print(CLR_RESET);
     delay(2000);
@@ -4753,7 +4878,7 @@ void composeMail() {
   
   client.println();
   client.println();
-  client.print(CLR_BRIGHT_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  Enter your message (max 300 chars):"));
   client.print(CLR_RESET);
   client.print(F("  > "));
@@ -4838,12 +4963,12 @@ void composeMail() {
     
     client.println();
     client.println();
-    client.print(CLR_BRIGHT_GREEN);
+    client.print(GET_SUCCESS());
     client.println(F("  ✓ Encrypted message sent successfully!"));
     client.print(CLR_RESET);
   } else {
     client.println();
-    client.print(CLR_RED);
+    client.print(GET_ERROR());
     client.println(F("  ✗ Error sending message!"));
     client.print(CLR_RESET);
   }
@@ -4859,7 +4984,7 @@ void handleComposeMailInput() {
 
 void showSentMail() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_BLUE, "SENT MESSAGES");
+  drawBox(GET_SECONDARY(), "SENT MESSAGES");
   client.println();
   
   char sentPath[40];
@@ -4881,7 +5006,7 @@ void showSentMail() {
     if (!entry) break;
     
     if (!entry.isDirectory()) {
-      client.print(CLR_BRIGHT_YELLOW);
+      client.print(GET_WARNING());
       client.print(F("  ┌─[ Message #"));
       client.print(count++);
       client.println(F(" ]─────────────────────────────"));
@@ -4902,7 +5027,7 @@ void showSentMail() {
         }
       }
       
-      client.print(CLR_BRIGHT_YELLOW);
+      client.print(GET_WARNING());
       client.println(F("  └────────────────────────────────────────────"));
       client.print(CLR_RESET);
       client.println();
@@ -4923,23 +5048,23 @@ void showSentMail() {
 
 void regenerateEncryptionKey() {
   client.print(F("\033[3J\033[2J\033[H"));
-  drawBox(CLR_YELLOW, "ENCRYPTION KEY");
+  drawBox(GET_WARNING(), "ENCRYPTION KEY");
   
   client.println();
-  client.print(CLR_BRIGHT_CYAN);
+  client.print(GET_SECONDARY());
   client.println(F("  Hardware-Generated Encryption Key"));
   client.print(CLR_RESET);
   client.println(F("  ───────────────────────────────────────────────────────────"));
   client.println();
   
   client.print(F("  Current Key: "));
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.print(F("0x"));
   client.println(session.userEncryptionKey, HEX);
   client.print(CLR_RESET);
   client.println();
   
-  client.print(CLR_YELLOW);
+  client.print(GET_WARNING());
   client.println(F("  This key is generated from:"));
   client.println(F("  • Arduino Mega 2560 analog pin noise"));
   client.println(F("  • Ethernet shield MAC address"));
@@ -4950,7 +5075,7 @@ client.println(F("  This combination makes your messages readable ONLY on"));
 client.println(F("  this specific Arduino Mega hardware platform."));
 client.print(CLR_RESET);
 client.println();
-client.print(CLR_RED);
+client.print(GET_ERROR());
 client.print(F("  Regenerate key? (y/n): "));
 client.print(CLR_RESET);
 char response[10];
@@ -4973,12 +5098,12 @@ if (idx > 0 && (response[0] == 'y' || response[0] == 'Y')) {
 uint32_t oldKey = session.userEncryptionKey;
 session.userEncryptionKey = generateHardwareKey();
 client.println();
-client.print(CLR_BRIGHT_GREEN);
+client.print(GET_SUCCESS());
 client.print(F("  ✓ New key generated: 0x"));
 client.println(session.userEncryptionKey, HEX);
 client.print(CLR_RESET);
 client.println();
-client.print(CLR_RED);
+client.print(GET_ERROR());
 client.println(F("  ⚠ WARNING: Old messages may not decrypt correctly!"));
 client.print(CLR_RESET);
 } else {
@@ -4992,9 +5117,523 @@ session.returnToMenu = MENU_SECURE_MAIL;
 
 // ==================== END SECURE MAIL SYSTEM ====================
 
+void changePassword() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  drawBox(GET_WARNING(), "CHANGE PASSWORD");
+  
+  client.println();
+  client.print(GET_SUCCESS());
+  client.print(F("Enter current password: "));
+  client.print(CLR_RESET);
+  
+  char currentPass[MAX_PASSWORD];
+  int idx = 0;
+  unsigned long startTime = millis();
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        currentPass[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < MAX_PASSWORD - 1 && c >= 32) {
+        currentPass[idx++] = c;
+        client.write('*');
+      }
+    }
+  }
+  
+  // ADD THIS: Clear any remaining characters in the buffer
+  delay(50);
+  while (client.available()) {
+    client.read();
+  }
+  
+  // Verify current password
+  if (!verifyPassword(session.username, currentPass)) {
+    client.println();
+    client.print(GET_ERROR());
+    client.println(F("\n✗ Incorrect current password!"));
+    client.print(CLR_RESET);
+    delay(2000);
+    showSettingsMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("Enter new password: "));
+  
+  char newPass[MAX_PASSWORD];
+  idx = 0;
+  startTime = millis();
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        newPass[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < MAX_PASSWORD - 1 && c >= 32) {
+        newPass[idx++] = c;
+        client.write('*');
+      }
+    }
+  }
+  
+  // ADD THIS: Clear buffer again
+  delay(50);
+  while (client.available()) {
+    client.read();
+  }
+  
+  if (idx < 6) {
+    client.println();
+    client.print(GET_ERROR());
+    client.println(F("\n✗ Password must be at least 6 characters!"));
+    client.print(CLR_RESET);
+    delay(2000);
+    showSettingsMenu();
+    return;
+  }
+  
+  client.println();
+  client.print(F("Confirm new password: "));
+  
+  char confirmPass[MAX_PASSWORD];
+  idx = 0;
+  startTime = millis();
+  
+  while (millis() - startTime < 30000) {
+    if (client.available()) {
+      char c = client.read();
+      if (c == '\n' || c == '\r') {
+        confirmPass[idx] = '\0';
+        break;
+      } else if (c == 8 || c == 127) {
+        if (idx > 0) {
+          idx--;
+          client.write(8);
+          client.write(' ');
+          client.write(8);
+        }
+      } else if (idx < MAX_PASSWORD - 1 && c >= 32) {
+        confirmPass[idx++] = c;
+        client.write('*');
+      }
+    }
+  }
+  
+  // ADD THIS: Final buffer clear
+  delay(50);
+  while (client.available()) {
+    client.read();
+  }
+  
+  if (strcmp(newPass, confirmPass) != 0) {
+    client.println();
+    client.print(GET_ERROR());
+    client.println(F("\n✗ Passwords do not match!"));
+    client.print(CLR_RESET);
+    delay(2000);
+    showSettingsMenu();
+    return;
+  }
+  
+  // Update password in users.txt
+  if (updateUserPassword(session.username, newPass)) {
+    client.println();
+    client.print(GET_SUCCESS());
+    client.println(F("\n✓ Password changed successfully!"));
+    client.print(CLR_RESET);
+  } else {
+    client.println();
+    client.print(GET_ERROR());
+    client.println(F("\n✗ Error updating password!"));
+    client.print(CLR_RESET);
+  }
+  
+  delay(2000);
+  showSettingsMenu();
+}
+
+bool verifyPassword(const char* username, const char* password) {
+  File f = SD.open("users.txt", FILE_READ);
+  if (!f) return false;
+  
+  char line[64];
+  int idx = 0;
+  
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        line[idx] = '\0';
+        char* user = strtok(line, ":");
+        char* pass = strtok(NULL, ":");
+        
+        if (user && pass && strcmp(user, username) == 0 && strcmp(pass, password) == 0) {
+          f.close();
+          return true;
+        }
+        idx = 0;
+      }
+    } else if (idx < 63) {
+      line[idx++] = c;
+    }
+  }
+  
+  f.close();
+  return false;
+}
+
+bool updateUserPassword(const char* username, const char* newPassword) {
+  // Read all users into memory
+  File fRead = SD.open("users.txt", FILE_READ);
+  if (!fRead) return false;
+  
+  File fTemp = SD.open("temp.txt", FILE_WRITE);
+  if (!fTemp) {
+    fRead.close();
+    return false;
+  }
+  
+  char line[64];
+  int idx = 0;
+  
+  while (fRead.available()) {
+    char c = fRead.read();
+    if (c == '\n' || c == '\r') {
+      if (idx > 0) {
+        line[idx] = '\0';
+        char lineCopy[64];
+        strcpy(lineCopy, line);
+        
+        char* user = strtok(line, ":");
+        strtok(NULL, ":");
+        char* admin = strtok(NULL, ":");
+        
+        if (user && strcmp(user, username) == 0) {
+          // Write updated line
+          fTemp.print(user);
+          fTemp.print(":");
+          fTemp.print(newPassword);
+          fTemp.print(":");
+          fTemp.println(admin ? admin : "0");
+        } else {
+          // Write original line
+          fTemp.println(lineCopy);
+        }
+        idx = 0;
+      }
+    } else if (idx < 63) {
+      line[idx++] = c;
+    }
+  }
+  
+  fRead.close();
+  fTemp.close();
+  
+  // Replace original file
+  SD.remove("users.txt");
+  File fTempRead = SD.open("temp.txt", FILE_READ);
+  File fNew = SD.open("users.txt", FILE_WRITE);
+  
+  if (fTempRead && fNew) {
+    while (fTempRead.available()) {
+      fNew.write(fTempRead.read());
+    }
+    fTempRead.close();
+    fNew.close();
+  }
+  
+  SD.remove("temp.txt");
+  return true;
+}
+
+void loadTheme() {
+  File f = SD.open("theme.txt", FILE_READ);
+  if (f) {
+    char line[32];
+    int idx = 0;
+    
+    while (f.available() && idx < 31) {
+      char c = f.read();
+      if (c == '\n' || c == '\r') {
+        line[idx] = '\0';
+        break;
+      }
+      line[idx++] = c;
+    }
+    f.close();
+    
+    if (idx > 0) {
+      currentTheme = atoi(line);
+      // Validate theme ID
+      if (currentTheme < 0 || currentTheme > 6) {
+        currentTheme = 0;
+      }
+      Serial.print(F("Loaded theme: "));
+      Serial.println(currentTheme);
+    }
+  }
+}
+
+void saveTheme() {
+  if (SD.exists("theme.txt")) {
+    SD.remove("theme.txt");
+  }
+  
+  File f = SD.open("theme.txt", FILE_WRITE);
+  if (f) {
+    f.println(currentTheme);
+    f.close();
+  }
+}
+
+void applyTheme(int themeId) {
+  currentTheme = themeId;
+  saveTheme();
+}
+
+void previewTheme(int themeId) {
+  const Theme& t = themes[themeId];
+  
+  client.println();
+  client.print(t.primary);
+  client.print(F("  Primary text: "));
+  client.print(t.name);
+  client.print(CLR_RESET);
+  client.println();
+  
+  client.print(t.secondary);
+  client.println(F("  Secondary text example"));
+  client.print(CLR_RESET);
+  
+  client.print(t.accent);
+  client.println(F("  Accent text example"));
+  client.print(CLR_RESET);
+  
+  client.print(t.success);
+  client.println(F("  ✓ Success message example"));
+  client.print(CLR_RESET);
+  
+  client.print(t.error);
+  client.println(F("  ✗ Error message example"));
+  client.print(CLR_RESET);
+  
+  client.print(t.warning);
+  client.println(F("  ⚠ Warning message example"));
+  client.print(CLR_RESET);
+  
+  // Draw a sample box
+  client.println();
+  client.print(t.accent);
+  client.println(F("  ┌─────────────────────────────────────┐"));
+  client.print(F("  │ "));
+  client.print(t.title);
+  client.print(F("Sample Box with Title"));
+  client.print(t.accent);
+  client.println(F("           │"));
+  client.println(F("  ├─────────────────────────────────────┤"));
+  client.print(F("  │ "));
+  client.print(t.primary);
+  client.print(F("This is how content looks"));
+  client.print(t.accent);
+  client.println(F("        │"));
+  client.print(F("  │ "));
+  client.print(t.secondary);
+  client.print(F("With secondary text mixed in"));
+  client.print(t.accent);
+  client.println(F("      │"));
+  client.println(F("  └─────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+}
+
+void showThemeMenu() {
+  client.print(F("\033[3J\033[2J\033[H"));
+  
+  const Theme& t = themes[currentTheme];
+  
+  // Use current theme colors for the menu
+  client.print(t.accent);
+  client.println(F("  ╔═══════════════════════════════════════════════════════════╗"));
+  client.print(F("  ║ "));
+  client.print(t.title);
+  client.print(F("THEME SELECTOR"));
+  client.print(t.accent);
+  client.println(F("                                           ║"));
+  client.println(F("  ╚═══════════════════════════════════════════════════════════╝"));
+  client.print(CLR_RESET);
+  
+  client.println();
+  client.print(t.secondary);
+  client.print(F("  Current theme: "));
+  client.print(t.success);
+  client.println(themes[currentTheme].name);
+  client.print(CLR_RESET);
+  client.println();
+  
+  client.print(t.primary);
+  client.println(F("  Available Themes:"));
+  client.println(F("  ─────────────────────────────────────────────────────────"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  // List all themes
+  for (int i = 0; i < 7; i++) {
+    if (i == currentTheme) {
+      client.print(t.success);
+      client.print(F("  ► ["));
+    } else {
+      client.print(t.primary);
+      client.print(F("    ["));
+    }
+    client.print(i + 1);
+    client.print(F("] "));
+    client.print(themes[i].name);
+    if (i == currentTheme) {
+      client.print(F(" (Active)"));
+    }
+    client.print(CLR_RESET);
+    client.println();
+  }
+  
+  client.println();
+  client.print(t.accent);
+  client.println(F("  ┌─────────────────────────────────────────────────────────┐"));
+  client.println(F("  │                                                         │"));
+  client.print(t.primary);
+  client.println(F("  │  [1-7] Select Theme   - Choose and preview             │"));
+  client.println(F("  │  [P] Preview Current  - See current theme details      │"));
+  client.println(F("  │                                                         │"));
+  client.println(F("  │  [0] Back             - Return to settings             │"));
+  client.println(F("  │                                                         │"));
+  client.print(t.accent);
+  client.println(F("  └─────────────────────────────────────────────────────────┘"));
+  client.print(CLR_RESET);
+  client.println();
+  
+  client.print(t.prompt);
+  client.print(F("Choice"));
+  client.print(CLR_RESET);
+  client.print(F(" > "));
+}
+
+void handleThemeChoice(int choice) {
+  const Theme& t = themes[currentTheme];
+  
+  // Check for 'P' command
+  if (cmdBuffer[0] == 'p' || cmdBuffer[0] == 'P') {
+    client.print(F("\033[3J\033[2J\033[H"));
+    client.print(t.accent);
+    client.println(F("  ╔═══════════════════════════════════════════════════════════╗"));
+    client.print(F("  ║ "));
+    client.print(t.title);
+    client.print(F("THEME PREVIEW"));
+    client.print(t.accent);
+    client.println(F("                                            ║"));
+    client.println(F("  ╚═══════════════════════════════════════════════════════════╝"));
+    client.print(CLR_RESET);
+    
+    previewTheme(currentTheme);
+    
+    client.println();
+    client.println(F("Press Enter to continue..."));
+    session.waitingForContinue = true;
+    session.returnToMenu = MENU_SETTINGS;
+    return;
+  }
+  
+  if (choice >= 1 && choice <= 7) {
+    int newTheme = choice - 1;
+    
+    client.print(F("\033[3J\033[2J\033[H"));
+    client.print(themes[newTheme].accent);
+    client.println(F("  ╔═══════════════════════════════════════════════════════════╗"));
+    client.print(F("  ║ "));
+    client.print(themes[newTheme].title);
+    client.print(F("PREVIEW: "));
+    client.print(themes[newTheme].name);
+    client.print(themes[newTheme].accent);
+    
+    // Pad the title
+    int padding = 45 - strlen(themes[newTheme].name);
+    for (int i = 0; i < padding; i++) client.print(F(" "));
+    
+    client.println(F("║"));
+    client.println(F("  ╚═══════════════════════════════════════════════════════════╝"));
+    client.print(CLR_RESET);
+    
+    previewTheme(newTheme);
+    
+    client.println();
+    client.print(themes[newTheme].secondary);
+    client.print(F("Apply this theme? (y/n): "));
+    client.print(CLR_RESET);
+    
+    char response[10];
+    int idx = 0;
+    unsigned long startTime = millis();
+    
+    while (millis() - startTime < 10000) {
+      if (client.available()) {
+        char c = client.read();
+        if (c == '\n' || c == '\r') {
+          response[idx] = '\0';
+          break;
+        } else if (idx < 9) {
+          response[idx++] = c;
+          client.write(c);
+        }
+      }
+    }
+    
+    client.println();
+    
+    if (idx > 0 && (response[0] == 'y' || response[0] == 'Y')) {
+      applyTheme(newTheme);
+      client.print(themes[newTheme].success);
+      client.print(F("✓ Theme changed to: "));
+      client.println(themes[newTheme].name);
+      client.print(CLR_RESET);
+      delay(2000);
+    } else {
+      client.print(t.warning);
+      client.println(F("Theme not changed."));
+      client.print(CLR_RESET);
+      delay(1500);
+    }
+    
+    showThemeMenu();
+  } else if (choice == 0) {
+    showSettingsMenu();
+  } else {
+    client.print(t.error);
+    client.println(F("Invalid choice."));
+    client.print(CLR_RESET);
+    delay(1000);
+    showThemeMenu();
+  }
+}
+
 void logout() {
   client.println();
-  client.print(CLR_BRIGHT_GREEN);
+  client.print(GET_SUCCESS());
   client.println(F("  ╔═════════════════════════════════════════════════╗"));
   client.println(F("  ║    ╔═╗╦═╗╔╦╗╦ ╦╦╔╗╔╔═╗  ╔╦╗╔═╗╔═╗╔═╗  ╔═╗╔═╗    ║"));
   client.println(F("  ║    ╠═╣╠╦╝ ║║║ ║║║║║║ ║  ║║║║╣ ║ ╦╠═╣  ║ ║╚═╗    ║"));
