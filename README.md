@@ -9,7 +9,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 **Login Screen**
 
@@ -41,7 +41,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 
 # Arduino Mega 2560 OS
 ---
-## 🚀 Getting Started
+## Getting Started
 1. Flash the ARDUINO_MEGA_BBS.ino sketch to your **Arduino Mega 2560**
 2. Insert SD card into the Ethernet Shield
 3. Connect Ethernet cable
@@ -54,7 +54,7 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
    * Hostname: (Enter the IP Address you see in Serial Monitor)
 7. Log in and explore
 ---
-## 📟 Features
+## Features
 
 * **Multi-screen terminal UI (BBS style)**
 * **User authentication system**
@@ -73,13 +73,13 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 * **Structured SD Card File System**
 * Home Assistant Controller Functionality 
 ---
-## 🧰 Hardware Requirements
+## Hardware Requirements
 * **Arduino Mega 2560**
 * **Official Arduino Ethernet Shield (with SD card slot)**
 * Ethernet cable
 * SD card (FAT/FAT32)
 ---
-## 🔌 Network & Connection
+## Network & Connection
 * **Protocol:** Telnet
 * **Port:** `23`
 * **Client:** PuTTY (or any Telnet client)
@@ -94,14 +94,14 @@ It was a challenge getting this to compile for a system with only 256KB Flash, 8
 If DHCP fails, connect directly to the fallback IP.
 ---
 
-## 🔐 Default Login
+## Default Login
 | Username | Password |
 | -------- | -------- |
 | admin    | admin123 |
 > ⚠️ Change credentials in the source code before deploying on any real network.
 ---
 
-## 📁 SD Card Structure
+## SD Card Structure
 The system relies heavily on the SD card for:
 * User files
 * Notes
@@ -109,19 +109,19 @@ The system relies heavily on the SD card for:
 * Configuration data
 Ensure the SD card is properly formatted to FAT32 and inserted **before boot**.
 ---
-## ⚠️ Known Issues & Limitations
-* ❗ **Single User Only**
+## Known Issues & Limitations
+*  **Single User Only**
   * Only **one Telnet client** can be connected at a time
-* ⚠️ **Buggy Features**
+*  **Buggy Features**
   * Some modules may behave unpredictably
-* 🚧 **Incomplete Features**
+*  **Incomplete Features**
   * Certain planned features are partially implemented or placeholders
-* 🧠 **Memory Constraints**
+*   **Memory Constraints**
   * Limited by Arduino Mega RAM and flash size
-* 🔒 **Not Secure**
+*  **Not Secure**
   * Telnet is unencrypted and not safe for public networks
 ---
-## 🛣️ Roadmap / Ideas
+## Roadmap / Ideas
 * Multi-user support
 * Improved session handling
 * Better error handling
@@ -130,11 +130,11 @@ Ensure the SD card is properly formatted to FAT32 and inserted **before boot**.
 * Configurable networking
 * Password hashing
 ---
-## 📜 Disclaimer
+## Disclaimer
 This project is for **educational and experimental purposes only**.
 Do **not** expose it to the public internet.
 ---
-## 🧑‍💻 BY: dialtone404
+## Developed By: dialtone404
 Developed as a hobby/learning project inspired by classic BBS systems and terminal interfaces.
 
 ---
